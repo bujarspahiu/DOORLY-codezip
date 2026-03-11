@@ -130,9 +130,9 @@ const CompanyProfile: React.FC = () => {
           </h3>
           <div className="grid sm:grid-cols-2 gap-5">
             {[
-              { key: 'bankName', label: lang === 'en' ? 'Bank Name' : 'Emri i Bankës', required: true },
-              { key: 'bankSwift', label: 'SWIFT / BIC', required: true },
-              { key: 'bankAccount', label: 'IBAN', required: true, colSpan: true },
+              { key: 'bankName', label: lang === 'en' ? 'Bank Name' : 'Emri i Bankës', required: false },
+              { key: 'bankSwift', label: 'SWIFT / BIC', required: false },
+              { key: 'bankAccount', label: 'IBAN', required: false, colSpan: true },
             ].map((field) => (
               <div key={field.key} className={field.colSpan ? 'sm:col-span-2' : ''}>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">

@@ -124,7 +124,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
   const removeFormItem = (idx: number) => { if (form.items.length > 1) setForm({ ...form, items: form.items.filter((_, i) => i !== idx) }); };
 
   const formSubtotal = form.items.reduce((s, i) => s + i.total, 0);
-  const formVat = formSubtotal * 0.2;
+  const formVat = formSubtotal * 0.18;
   const formTotal = formSubtotal + formVat;
 
   const handleSave = async () => {
@@ -263,7 +263,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
           <div className="flex justify-end mb-6">
             <div className="w-64 space-y-2">
               <div className="flex justify-between text-sm"><span className="text-gray-600">{lang === 'en' ? 'Subtotal' : 'Nëntotali'}</span><span className="font-mono font-semibold">€{formSubtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-600">VAT (20%)</span><span className="font-mono font-semibold">€{formVat.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">VAT (18%)</span><span className="font-mono font-semibold">€{formVat.toFixed(2)}</span></div>
               <div className="flex justify-between pt-2 border-t-2" style={{ borderColor: accent }}><span className="font-bold">Total</span><span className="font-mono font-extrabold text-lg" style={{ color: accent }}>€{formTotal.toFixed(2)}</span></div>
             </div>
           </div>
@@ -376,7 +376,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
               <div className="flex justify-end">
                 <div className="w-72">
                   <div className="flex justify-between py-2 text-sm"><span className="text-gray-600">{lang === 'en' ? 'Subtotal' : 'Nëntotali'}</span><span className="font-mono font-semibold">€{parseFloat(String(previewQuote.subtotal)).toFixed(2)}</span></div>
-                  <div className="flex justify-between py-2 text-sm"><span className="text-gray-600">VAT (20%)</span><span className="font-mono font-semibold">€{parseFloat(String(previewQuote.vat)).toFixed(2)}</span></div>
+                  <div className="flex justify-between py-2 text-sm"><span className="text-gray-600">VAT (18%)</span><span className="font-mono font-semibold">€{parseFloat(String(previewQuote.vat)).toFixed(2)}</span></div>
                   <div className="flex justify-between py-3 border-t-2 mt-2" style={{ borderColor: accent }}><span className="font-bold text-lg">{lang === 'en' ? 'Total Due' : 'Totali'}</span><span className="font-mono font-extrabold text-xl" style={{ color: accent }}>€{parseFloat(String(previewQuote.total)).toFixed(2)}</span></div>
                 </div>
               </div>

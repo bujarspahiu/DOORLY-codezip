@@ -27,9 +27,9 @@ interface CalculatorProps {
 }
 
 const PRODUCT_IMAGES: Record<string, string> = {
-  window: 'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=400&q=80',
-  door: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80',
-  slidingDoor: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
+  window: 'https://images.unsplash.com/photo-1585128792020-803d29415281?w=400&q=80',
+  door: 'https://images.unsplash.com/photo-1506269351674-09ba2e5ef5d5?w=400&q=80',
+  slidingDoor: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&q=80',
 };
 
 const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
@@ -98,7 +98,7 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
     });
 
     const subtotal = materialCost + glassCost + serviceCost + accessoryCost;
-    const vat = subtotal * 0.2;
+    const vat = subtotal * 0.18;
     const total = subtotal + vat;
 
     return { area, totalArea, materialCost, glassCost, serviceCost, accessoryCost, subtotal, vat, total };
@@ -130,7 +130,7 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
   ];
 
   const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0);
-  const grandVat = grandTotal * 0.2;
+  const grandVat = grandTotal * 0.18;
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
