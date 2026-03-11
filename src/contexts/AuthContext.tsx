@@ -15,6 +15,9 @@ export interface CompanyProfile {
   accentColor: string;
   stampUrl: string;
   isComplete: boolean;
+  bankName: string;
+  bankAccount: string;
+  bankSwift: string;
 }
 
 export interface User {
@@ -64,6 +67,9 @@ function storedUserToUser(stored: StoredUser): User {
       accentColor: '#2563EB',
       stampUrl: '',
       isComplete: false,
+      bankName: '',
+      bankAccount: '',
+      bankSwift: '',
     },
   };
 }
@@ -79,13 +85,30 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 });
 
+function loadCompanyProfile(userId: string): Partial<CompanyProfile> {
+  try {
+    const saved = localStorage.getItem(`doorly_company_${userId}`);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return {};
+}
+
+function saveCompanyProfile(userId: string, profile: CompanyProfile) {
+  localStorage.setItem(`doorly_company_${userId}`, JSON.stringify(profile));
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const savedId = localStorage.getItem('doorly_current_user');
       if (savedId) {
         const stored = getUserById(savedId);
-        if (stored) return storedUserToUser(stored);
+        if (stored) {
+          const u = storedUserToUser(stored);
+          const savedProfile = loadCompanyProfile(stored.id);
+          u.company = { ...u.company!, ...savedProfile };
+          return u;
+        }
       }
     } catch {}
     return null;
@@ -95,6 +118,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const stored = authenticateUser(username, password);
     if (stored) {
       const u = storedUserToUser(stored);
+      const savedProfile = loadCompanyProfile(stored.id);
+      u.company = { ...u.company!, ...savedProfile };
       setUser(u);
       localStorage.setItem('doorly_current_user', stored.id);
       return { success: true };
@@ -122,10 +147,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateCompanyProfile = async (profile: Partial<CompanyProfile>) => {
     if (!user) return;
-    setUser({
-      ...user,
-      company: { ...user.company!, ...profile },
-    });
+    const updated = { ...user.company!, ...profile };
+    setUser({ ...user, company: updated });
+    saveCompanyProfile(user.id, updated);
   };
 
   const refreshProfile = async () => {};

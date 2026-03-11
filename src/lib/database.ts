@@ -38,7 +38,7 @@ export async function getCustomers(userId: string) {
   return data || [];
 }
 
-export async function createCustomer(userId: string, customer: { name: string; email?: string; phone?: string; address?: string; city?: string }) {
+export async function createCustomer(userId: string, customer: { name: string; email?: string; phone?: string; address?: string; city?: string; country?: string; reg_number?: string; vat_number?: string; bank_name?: string; bank_account?: string; bank_swift?: string }) {
   const { data, error } = await supabase
     .from('customers')
     .insert({ user_id: userId, ...customer })
@@ -118,8 +118,10 @@ export async function getRecentQuotes(userId: string, limit = 5) {
 
 export async function createQuote(userId: string, quote: {
   quote_number: string; doc_type: string; customer_name: string; customer_phone?: string;
-  customer_email?: string; customer_address?: string; items: any[];
-  subtotal: number; vat: number; total: number; notes?: string; valid_until?: string;
+  customer_email?: string; customer_address?: string; customer_city?: string; customer_country?: string;
+  customer_vat?: string; customer_reg?: string; customer_bank_name?: string;
+  customer_bank_account?: string; customer_bank_swift?: string;
+  items: any[]; subtotal: number; vat: number; total: number; notes?: string; valid_until?: string;
 }) {
   const { data, error } = await supabase
     .from('quotes')

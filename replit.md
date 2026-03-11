@@ -28,6 +28,13 @@ A SaaS platform for window and door professionals to manage their business opera
 - `src/contexts/` - Auth, Language, App contexts
 - `src/lib/` - Supabase client, database functions, user store
 
+## Company Profile & Customers
+- Company Profile has: company info (mandatory), bank account details (mandatory), logo upload, branding colors
+- Customer has: same fields as company (name, email, phone, address, city, country, reg number, VAT, bank details) but only name is mandatory
+- Company profile data is persisted in localStorage per user (`doorly_company_{userId}`)
+- When creating quotes/invoices, user can select existing customer to auto-fill all fields
+- Invoice/quote preview shows both company and customer details, including bank payment details and company logo
+
 ## Branding
 - Logo: `/public/doorly-logo.png` (full), `/public/doorly-logo-nobg.png` (transparent)
 - Used across: navbar, footer, dashboard sidebar, admin panel, admin login, favicon, OG image

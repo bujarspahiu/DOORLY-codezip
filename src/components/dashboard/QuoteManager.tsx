@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { getQuotes, createQuote, updateQuote, deleteQuote as dbDeleteQuote, getNextQuoteNumber } from '../../lib/database';
+import { getQuotes, createQuote, updateQuote, deleteQuote as dbDeleteQuote, getNextQuoteNumber, getCustomers } from '../../lib/database';
 
 interface QuoteItem {
   description: string;
@@ -17,6 +17,13 @@ interface Quote {
   customer_phone: string;
   customer_email: string;
   customer_address: string;
+  customer_city: string;
+  customer_country: string;
+  customer_vat: string;
+  customer_reg: string;
+  customer_bank_name: string;
+  customer_bank_account: string;
+  customer_bank_swift: string;
   items: QuoteItem[];
   subtotal: number;
   vat: number;
@@ -39,6 +46,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
   const isInvoice = type === 'invoice';
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,13 +54,17 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    customerName: '', customerPhone: '', customerEmail: '', customerAddress: '', notes: '',
+    customerName: '', customerPhone: '', customerEmail: '', customerAddress: '',
+    customerCity: '', customerCountry: '', customerVat: '', customerReg: '',
+    customerBankName: '', customerBankAccount: '', customerBankSwift: '',
+    notes: '',
     items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] as QuoteItem[],
   });
 
   useEffect(() => {
     if (!user) return;
     loadQuotes();
+    loadCustomers();
   }, [user, type]);
 
   const loadQuotes = async () => {
@@ -65,6 +77,35 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadCustomers = async () => {
+    if (!user) return;
+    try {
+      const data = await getCustomers(user.id);
+      setCustomers(data);
+    } catch (err) {
+      console.error('Error loading customers:', err);
+    }
+  };
+
+  const selectCustomer = (customerId: string) => {
+    const c = customers.find(cust => cust.id === customerId);
+    if (!c) return;
+    setForm({
+      ...form,
+      customerName: c.name || '',
+      customerPhone: c.phone || '',
+      customerEmail: c.email || '',
+      customerAddress: c.address || '',
+      customerCity: c.city || '',
+      customerCountry: c.country || '',
+      customerVat: c.vat_number || '',
+      customerReg: c.reg_number || '',
+      customerBankName: c.bank_name || '',
+      customerBankAccount: c.bank_account || '',
+      customerBankSwift: c.bank_swift || '',
+    });
   };
 
   const statusColors: Record<string, string> = {
@@ -90,24 +131,26 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
     if (!user || !form.customerName.trim()) return;
     setSaving(true);
     try {
+      const payload = {
+        customer_name: form.customerName, customer_phone: form.customerPhone,
+        customer_email: form.customerEmail, customer_address: form.customerAddress,
+        customer_city: form.customerCity, customer_country: form.customerCountry,
+        customer_vat: form.customerVat, customer_reg: form.customerReg,
+        customer_bank_name: form.customerBankName, customer_bank_account: form.customerBankAccount,
+        customer_bank_swift: form.customerBankSwift,
+        items: form.items, subtotal: formSubtotal, vat: formVat, total: formTotal, notes: form.notes,
+      };
       if (editingId) {
-        await updateQuote(editingId, {
-          customer_name: form.customerName, customer_phone: form.customerPhone,
-          customer_email: form.customerEmail, customer_address: form.customerAddress,
-          items: form.items, subtotal: formSubtotal, vat: formVat, total: formTotal, notes: form.notes,
-        });
+        await updateQuote(editingId, payload);
       } else {
         const qNum = await getNextQuoteNumber(user.id, type);
         await createQuote(user.id, {
-          quote_number: qNum, doc_type: type, customer_name: form.customerName,
-          customer_phone: form.customerPhone, customer_email: form.customerEmail,
-          customer_address: form.customerAddress, items: form.items,
-          subtotal: formSubtotal, vat: formVat, total: formTotal, notes: form.notes,
+          ...payload, quote_number: qNum, doc_type: type,
           valid_until: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
         });
       }
       setShowForm(false); setEditingId(null);
-      setForm({ customerName: '', customerPhone: '', customerEmail: '', customerAddress: '', notes: '', items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] });
+      setForm({ customerName: '', customerPhone: '', customerEmail: '', customerAddress: '', customerCity: '', customerCountry: '', customerVat: '', customerReg: '', customerBankName: '', customerBankAccount: '', customerBankSwift: '', notes: '', items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] });
       await loadQuotes();
     } catch (err) {
       console.error('Error saving:', err);
@@ -123,8 +166,11 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
       await createQuote(user.id, {
         quote_number: qNum, doc_type: type, customer_name: q.customer_name,
         customer_phone: q.customer_phone, customer_email: q.customer_email,
-        customer_address: q.customer_address, items: q.items,
-        subtotal: q.subtotal, vat: q.vat, total: q.total, notes: q.notes,
+        customer_address: q.customer_address, customer_city: q.customer_city,
+        customer_country: q.customer_country, customer_vat: q.customer_vat,
+        customer_reg: q.customer_reg, customer_bank_name: q.customer_bank_name,
+        customer_bank_account: q.customer_bank_account, customer_bank_swift: q.customer_bank_swift,
+        items: q.items, subtotal: q.subtotal, vat: q.vat, total: q.total, notes: q.notes,
         valid_until: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       });
       await loadQuotes();
@@ -133,7 +179,15 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
 
   const editQuote = (q: Quote) => {
     setEditingId(q.id);
-    setForm({ customerName: q.customer_name, customerPhone: q.customer_phone || '', customerEmail: q.customer_email || '', customerAddress: q.customer_address || '', notes: q.notes || '', items: q.items.length ? q.items : [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] });
+    setForm({
+      customerName: q.customer_name, customerPhone: q.customer_phone || '',
+      customerEmail: q.customer_email || '', customerAddress: q.customer_address || '',
+      customerCity: q.customer_city || '', customerCountry: q.customer_country || '',
+      customerVat: q.customer_vat || '', customerReg: q.customer_reg || '',
+      customerBankName: q.customer_bank_name || '', customerBankAccount: q.customer_bank_account || '',
+      customerBankSwift: q.customer_bank_swift || '',
+      notes: q.notes || '', items: q.items.length ? q.items : [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
+    });
     setShowForm(true);
   };
 
@@ -152,7 +206,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
           <h2 className="text-xl font-bold text-gray-900">{isInvoice ? (lang === 'en' ? 'Invoices' : 'Faturat') : (lang === 'en' ? 'Quotes' : 'Ofertat')}</h2>
           <p className="text-sm text-gray-500">{quotes.length} {typeLabel.toLowerCase()}s</p>
         </div>
-        <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ customerName: '', customerPhone: '', customerEmail: '', customerAddress: '', notes: '', items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] }); }} className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg" style={{ backgroundColor: accent }}>
+        <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ customerName: '', customerPhone: '', customerEmail: '', customerAddress: '', customerCity: '', customerCountry: '', customerVat: '', customerReg: '', customerBankName: '', customerBankAccount: '', customerBankSwift: '', notes: '', items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] }); }} className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg" style={{ backgroundColor: accent }}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           {lang === 'en' ? `New ${typeLabel}` : `${typeLabel} e Re`}
         </button>
@@ -164,12 +218,28 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
             <h3 className="text-lg font-bold text-gray-900">{editingId ? `${lang === 'en' ? 'Edit' : 'Ndrysho'} ${typeLabel}` : `${lang === 'en' ? 'New' : 'E Re'} ${typeLabel}`}</h3>
             <button onClick={() => { setShowForm(false); setEditingId(null); }} className="p-2 text-gray-400 hover:text-gray-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
           </div>
+
+          {customers.length > 0 && !editingId && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <label className="block text-sm font-medium text-blue-800 mb-2">{lang === 'en' ? 'Select Existing Customer' : 'Zgjidh Klientin Ekzistues'}</label>
+              <select onChange={(e) => e.target.value && selectCustomer(e.target.value)} className="w-full px-4 py-2.5 border border-blue-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-sm" defaultValue="">
+                <option value="">{lang === 'en' ? '-- Select a customer --' : '-- Zgjidh një klient --'}</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.city ? ` (${c.city})` : ''}</option>)}
+              </select>
+            </div>
+          )}
+
           <div className="grid sm:grid-cols-2 gap-4 mb-6">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Customer Name' : 'Emri i Klientit'} *</label><input type="text" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Phone' : 'Telefoni'}</label><input type="text" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" value={form.customerEmail} onChange={(e) => setForm({ ...form, customerEmail: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Address' : 'Adresa'}</label><input type="text" value={form.customerAddress} onChange={(e) => setForm({ ...form, customerAddress: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'City' : 'Qyteti'}</label><input type="text" value={form.customerCity} onChange={(e) => setForm({ ...form, customerCity: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Country' : 'Shteti'}</label><input type="text" value={form.customerCountry} onChange={(e) => setForm({ ...form, customerCountry: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'VAT Number' : 'Numri TVSH'}</label><input type="text" value={form.customerVat} onChange={(e) => setForm({ ...form, customerVat: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Reg. Number' : 'Nr. Regjistrimit'}</label><input type="text" value={form.customerReg} onChange={(e) => setForm({ ...form, customerReg: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" /></div>
           </div>
+
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-semibold text-gray-900">{lang === 'en' ? 'Line Items' : 'Artikujt'}</h4>
@@ -261,11 +331,16 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
             </div>
             <div className="p-8">
               <div className="flex justify-between items-start border-b-2 pb-6 mb-6" style={{ borderColor: accent }}>
-                <div>
-                  <h2 className="text-2xl font-extrabold" style={{ color: accent }}>{user?.company?.companyName || 'Doorly'}</h2>
-                  <p className="text-sm text-gray-600 mt-1">{user?.company?.address}, {user?.company?.city}</p>
-                  <p className="text-sm text-gray-600">{user?.company?.phone} | {user?.company?.email}</p>
-                  <p className="text-xs text-gray-500 mt-1">VAT: {user?.company?.vatNumber} | Reg: {user?.company?.regNumber}</p>
+                <div className="flex items-start gap-4">
+                  {user?.company?.logoUrl && (
+                    <img src={user.company.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+                  )}
+                  <div>
+                    <h2 className="text-2xl font-extrabold" style={{ color: accent }}>{user?.company?.companyName || 'Doorly'}</h2>
+                    <p className="text-sm text-gray-600 mt-1">{user?.company?.address}{user?.company?.city ? `, ${user?.company?.city}` : ''}{user?.company?.country ? `, ${user?.company?.country}` : ''}</p>
+                    <p className="text-sm text-gray-600">{user?.company?.phone} | {user?.company?.email}</p>
+                    <p className="text-xs text-gray-500 mt-1">VAT: {user?.company?.vatNumber} | Reg: {user?.company?.regNumber}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <h3 className="text-3xl font-extrabold uppercase tracking-wider" style={{ color: accent }}>{typeLabel}</h3>
@@ -273,12 +348,27 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
                   <p className="text-sm text-gray-600">{new Date(previewQuote.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">{lang === 'en' ? 'Bill To' : 'Faturuar Për'}</p>
-                <p className="font-bold text-gray-900">{previewQuote.customer_name}</p>
-                {previewQuote.customer_address && <p className="text-sm text-gray-600">{previewQuote.customer_address}</p>}
-                <p className="text-sm text-gray-600">{previewQuote.customer_phone} {previewQuote.customer_email && `| ${previewQuote.customer_email}`}</p>
+
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{lang === 'en' ? 'From' : 'Nga'}</p>
+                  <p className="font-bold text-gray-900">{user?.company?.companyName}</p>
+                  <p className="text-sm text-gray-600">{user?.company?.address}{user?.company?.city ? `, ${user?.company?.city}` : ''}</p>
+                  <p className="text-sm text-gray-600">{user?.company?.phone}</p>
+                  <p className="text-sm text-gray-600">{user?.company?.email}</p>
+                  {user?.company?.vatNumber && <p className="text-xs text-gray-500 mt-1">VAT: {user?.company?.vatNumber}</p>}
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{lang === 'en' ? 'Bill To' : 'Faturuar Për'}</p>
+                  <p className="font-bold text-gray-900">{previewQuote.customer_name}</p>
+                  {previewQuote.customer_address && <p className="text-sm text-gray-600">{previewQuote.customer_address}{previewQuote.customer_city ? `, ${previewQuote.customer_city}` : ''}{previewQuote.customer_country ? `, ${previewQuote.customer_country}` : ''}</p>}
+                  {previewQuote.customer_phone && <p className="text-sm text-gray-600">{previewQuote.customer_phone}</p>}
+                  {previewQuote.customer_email && <p className="text-sm text-gray-600">{previewQuote.customer_email}</p>}
+                  {previewQuote.customer_vat && <p className="text-xs text-gray-500 mt-1">VAT: {previewQuote.customer_vat}</p>}
+                  {previewQuote.customer_reg && <p className="text-xs text-gray-500">Reg: {previewQuote.customer_reg}</p>}
+                </div>
               </div>
+
               <table className="w-full mb-6">
                 <thead><tr style={{ backgroundColor: accent }}><th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase">#</th><th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase">{lang === 'en' ? 'Description' : 'Përshkrimi'}</th><th className="px-4 py-3 text-right text-xs font-semibold text-white uppercase">{lang === 'en' ? 'Qty' : 'Sasia'}</th><th className="px-4 py-3 text-right text-xs font-semibold text-white uppercase">{lang === 'en' ? 'Price' : 'Çmimi'}</th><th className="px-4 py-3 text-right text-xs font-semibold text-white uppercase">Total</th></tr></thead>
                 <tbody>{(previewQuote.items || []).map((item: QuoteItem, idx: number) => (<tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}><td className="px-4 py-3 text-sm">{idx + 1}</td><td className="px-4 py-3 text-sm font-medium">{item.description}</td><td className="px-4 py-3 text-sm text-right font-mono">{item.quantity}</td><td className="px-4 py-3 text-sm text-right font-mono">€{item.unitPrice?.toFixed(2)}</td><td className="px-4 py-3 text-sm text-right font-mono font-semibold">€{item.total?.toFixed(2)}</td></tr>))}</tbody>
@@ -290,6 +380,27 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
                   <div className="flex justify-between py-3 border-t-2 mt-2" style={{ borderColor: accent }}><span className="font-bold text-lg">{lang === 'en' ? 'Total Due' : 'Totali'}</span><span className="font-mono font-extrabold text-xl" style={{ color: accent }}>€{parseFloat(String(previewQuote.total)).toFixed(2)}</span></div>
                 </div>
               </div>
+
+              {(user?.company?.bankName || user?.company?.bankAccount) && (
+                <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{lang === 'en' ? 'Payment Details' : 'Detajet e Pagesës'}</p>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">{lang === 'en' ? 'Bank' : 'Banka'}</p>
+                      <p className="font-medium text-gray-900">{user?.company?.bankName}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">SWIFT / BIC</p>
+                      <p className="font-medium text-gray-900 font-mono">{user?.company?.bankSwift}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-gray-500">IBAN</p>
+                      <p className="font-medium text-gray-900 font-mono">{user?.company?.bankAccount}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-8 pt-6 border-t border-gray-200 text-center">
                 <p className="text-xs text-gray-500">{lang === 'en' ? 'Thank you for your business!' : 'Faleminderit për bashkëpunimin!'}</p>
               </div>

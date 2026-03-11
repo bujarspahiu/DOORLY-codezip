@@ -10,10 +10,21 @@ interface Customer {
   phone: string;
   address: string;
   city: string;
+  country: string;
+  reg_number: string;
+  vat_number: string;
+  bank_name: string;
+  bank_account: string;
+  bank_swift: string;
   total_quotes: number;
   total_spent: number;
   last_contact: string;
 }
+
+const emptyForm = {
+  name: '', email: '', phone: '', address: '', city: '', country: '',
+  reg_number: '', vat_number: '', bank_name: '', bank_account: '', bank_swift: '',
+};
 
 const CustomerManager: React.FC = () => {
   const { lang } = useLanguage();
@@ -24,8 +35,9 @@ const CustomerManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '' });
+  const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -56,7 +68,7 @@ const CustomerManager: React.FC = () => {
     try {
       await createCustomer(user.id, form);
       setShowForm(false);
-      setForm({ name: '', email: '', phone: '', address: '', city: '' });
+      setForm({ ...emptyForm });
       await loadCustomers();
     } catch (err) {
       console.error('Error creating customer:', err);
@@ -98,9 +110,10 @@ const CustomerManager: React.FC = () => {
       {showForm && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <h3 className="font-bold text-gray-900 mb-4">{lang === 'en' ? 'New Customer' : 'Klient i Ri'}</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
+
+          <div className="grid sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Full Name' : 'Emri i Plotë'} *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Full Name' : 'Emri i Plotë'} <span className="text-red-500">*</span></label>
               <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
             </div>
             <div>
@@ -115,11 +128,45 @@ const CustomerManager: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'City' : 'Qyteti'}</label>
               <input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Country' : 'Shteti'}</label>
+              <input type="text" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Registration Nr.' : 'Nr. Regjistrimit'}</label>
+              <input type="text" value={form.reg_number} onChange={(e) => setForm({ ...form, reg_number: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Address' : 'Adresa'}</label>
               <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
             </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'VAT Number' : 'Numri TVSH'}</label>
+              <input type="text" value={form.vat_number} onChange={(e) => setForm({ ...form, vat_number: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
           </div>
+
+          <div className="border-t border-gray-100 pt-4 mb-4">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+              {lang === 'en' ? 'Bank Account Details' : 'Të Dhënat Bankare'}
+            </h4>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'en' ? 'Bank Name' : 'Emri i Bankës'}</label>
+                <input type="text" value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT / BIC</label>
+                <input type="text" value={form.bank_swift} onChange={(e) => setForm({ ...form, bank_swift: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                <input type="text" value={form.bank_account} onChange={(e) => setForm({ ...form, bank_account: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono" />
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 mt-4">
             <button onClick={() => setShowForm(false)} className="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">{lang === 'en' ? 'Cancel' : 'Anulo'}</button>
             <button onClick={handleSave} disabled={saving || !form.name.trim()} className="px-5 py-2 text-white rounded-lg font-semibold disabled:opacity-50" style={{ backgroundColor: accent }}>
@@ -140,13 +187,13 @@ const CustomerManager: React.FC = () => {
           {filtered.map((c) => (
             <div key={c.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}>
                   <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: accent }}>
                     {c.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{c.name}</p>
-                    <p className="text-xs text-gray-500">{c.city}</p>
+                    <p className="text-xs text-gray-500">{c.city}{c.country ? `, ${c.country}` : ''}</p>
                   </div>
                 </div>
                 <button onClick={() => handleDelete(c.id)} className="p-1 text-gray-400 hover:text-red-500 transition-colors">
@@ -156,7 +203,17 @@ const CustomerManager: React.FC = () => {
               <div className="mt-4 space-y-1.5 text-sm">
                 {c.email && <div className="flex items-center gap-2 text-gray-600"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>{c.email}</div>}
                 {c.phone && <div className="flex items-center gap-2 text-gray-600"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>{c.phone}</div>}
+                {c.address && <div className="flex items-center gap-2 text-gray-600"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>{c.address}</div>}
               </div>
+              {expandedId === c.id && (
+                <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-sm text-gray-600">
+                  {c.vat_number && <p><span className="font-medium text-gray-700">VAT:</span> {c.vat_number}</p>}
+                  {c.reg_number && <p><span className="font-medium text-gray-700">{lang === 'en' ? 'Reg:' : 'Reg:'}</span> {c.reg_number}</p>}
+                  {c.bank_name && <p><span className="font-medium text-gray-700">{lang === 'en' ? 'Bank:' : 'Banka:'}</span> {c.bank_name}</p>}
+                  {c.bank_account && <p><span className="font-medium text-gray-700">IBAN:</span> <span className="font-mono">{c.bank_account}</span></p>}
+                  {c.bank_swift && <p><span className="font-medium text-gray-700">SWIFT:</span> <span className="font-mono">{c.bank_swift}</span></p>}
+                </div>
+              )}
               <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between text-xs text-gray-500">
                 <span>{c.total_quotes || 0} {lang === 'en' ? 'quotes' : 'oferta'}</span>
                 <span className="font-semibold text-gray-700">€{(c.total_spent || 0).toLocaleString()}</span>
