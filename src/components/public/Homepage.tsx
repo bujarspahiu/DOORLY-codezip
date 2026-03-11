@@ -82,7 +82,7 @@ const Homepage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent">GlazePro</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent">Doorly</span>
             </div>
 
             <div className="hidden md:flex items-center gap-8">
@@ -267,7 +267,7 @@ const Homepage: React.FC = () => {
               <div className="mt-10 space-y-6">
                 {[
                   { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, text: 'Tirana, Albania' },
-                  { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, text: 'info@glazepro.com' },
+                  { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, text: 'info@doorly.com' },
                   { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>, text: '+355 69 000 0000' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-4">
@@ -314,7 +314,7 @@ const Homepage: React.FC = () => {
             {lang === 'en' ? 'Ready to Transform Your Business?' : 'Gati të Transformoni Biznesin Tuaj?'}
           </h2>
           <p className="mt-4 text-lg text-blue-200">
-            {lang === 'en' ? 'Join hundreds of window and door professionals who trust GlazePro.' : 'Bashkohuni me qindra profesionistë të dritareve dhe dyerve që besojnë GlazePro.'}
+            {lang === 'en' ? 'Join hundreds of window and door professionals who trust Doorly.' : 'Bashkohuni me qindra profesionistë të dritareve dhe dyerve që besojnë Doorly.'}
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <button onClick={() => setLoginOpen(true)} className="px-10 py-4 bg-white text-blue-900 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all shadow-xl">
@@ -333,7 +333,7 @@ const Homepage: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                 </div>
-                <span className="text-lg font-bold text-white">GlazePro</span>
+                <span className="text-lg font-bold text-white">Doorly</span>
               </div>
               <p className="text-sm leading-relaxed">{t('footer.desc')}</p>
             </div>
@@ -363,7 +363,7 @@ const Homepage: React.FC = () => {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm">© 2026 GlazePro. {t('footer.rights')}</p>
+            <p className="text-sm">© 2026 Doorly. {t('footer.rights')}</p>
             <div className="flex items-center gap-4">
               {['M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z',
                 'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z',

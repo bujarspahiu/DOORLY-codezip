@@ -80,12 +80,12 @@ const translations: Translations = {
   
   // Login
   'login.title': { en: 'Business Login', al: 'Hyrje Biznesi' },
-  'login.email': { en: 'Email', al: 'Email' },
+  'login.email': { en: 'Username', al: 'Emri i Përdoruesit' },
   'login.password': { en: 'Password', al: 'Fjalëkalimi' },
   'login.submit': { en: 'Sign In', al: 'Hyni' },
   'login.forgot': { en: 'Forgot password?', al: 'Keni harruar fjalëkalimin?' },
   'login.register': { en: 'Don\'t have an account? Register', al: 'Nuk keni llogari? Regjistrohuni' },
-  'login.error': { en: 'Invalid email or password', al: 'Email ose fjalëkalim i pavlefshëm' },
+  'login.error': { en: 'Invalid username or password', al: 'Emri ose fjalëkalimi i pavlefshëm' },
   
   // Dashboard
   'dash.welcome': { en: 'Welcome back', al: 'Mirë se u kthyet' },

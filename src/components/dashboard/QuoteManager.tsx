@@ -262,7 +262,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
             <div className="p-8">
               <div className="flex justify-between items-start border-b-2 pb-6 mb-6" style={{ borderColor: accent }}>
                 <div>
-                  <h2 className="text-2xl font-extrabold" style={{ color: accent }}>{user?.company?.companyName || 'GlazePro'}</h2>
+                  <h2 className="text-2xl font-extrabold" style={{ color: accent }}>{user?.company?.companyName || 'Doorly'}</h2>
                   <p className="text-sm text-gray-600 mt-1">{user?.company?.address}, {user?.company?.city}</p>
                   <p className="text-sm text-gray-600">{user?.company?.phone} | {user?.company?.email}</p>
                   <p className="text-xs text-gray-500 mt-1">VAT: {user?.company?.vatNumber} | Reg: {user?.company?.regNumber}</p>

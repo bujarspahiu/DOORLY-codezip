@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
-import { getProfile, updateProfile as dbUpdateProfile } from '../lib/database';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { authenticateUser, getUserById, type StoredUser } from '../lib/userStore';
 
 export interface CompanyProfile {
   companyName: string;
@@ -22,6 +21,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  username: string;
   role: 'admin' | 'business';
   company?: CompanyProfile;
   plan?: string;
@@ -33,36 +33,37 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateCompanyProfile: (profile: Partial<CompanyProfile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
-function profileToUser(profile: any): User {
+function storedUserToUser(stored: StoredUser): User {
   return {
-    id: profile.id,
-    email: profile.email,
-    name: profile.full_name || '',
-    role: profile.role || 'business',
-    plan: profile.plan || 'starter',
-    status: profile.status || 'active',
-    createdAt: profile.created_at,
+    id: stored.id,
+    email: stored.email,
+    name: stored.fullName,
+    username: stored.username,
+    role: stored.role,
+    plan: stored.plan,
+    status: stored.status,
+    createdAt: stored.createdAt,
     company: {
-      companyName: profile.company_name || '',
-      regNumber: profile.reg_number || '',
-      vatNumber: profile.vat_number || '',
-      address: profile.address || '',
-      city: profile.city || '',
-      country: profile.country || '',
-      phone: profile.phone || '',
-      email: profile.company_email || '',
-      website: profile.website || '',
-      logoUrl: profile.logo_url || '',
-      accentColor: profile.accent_color || '#2563EB',
-      stampUrl: profile.stamp_url || '',
-      isComplete: profile.profile_complete || false,
+      companyName: stored.companyName,
+      regNumber: '',
+      vatNumber: '',
+      address: '',
+      city: '',
+      country: '',
+      phone: '',
+      email: stored.email,
+      website: '',
+      logoUrl: '',
+      accentColor: '#2563EB',
+      stampUrl: '',
+      isComplete: false,
     },
   };
 }
@@ -70,7 +71,7 @@ function profileToUser(profile: any): User {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
-  loading: true,
+  loading: false,
   login: async () => ({ success: false }),
   register: async () => ({ success: false }),
   logout: () => {},
@@ -79,114 +80,58 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadProfile = async (userId: string) => {
+  const [user, setUser] = useState<User | null>(() => {
     try {
-      const profile = await getProfile(userId);
-      if (profile) {
-        setUser(profileToUser(profile));
+      const savedId = localStorage.getItem('doorly_current_user');
+      if (savedId) {
+        const stored = getUserById(savedId);
+        if (stored) return storedUserToUser(stored);
       }
-    } catch (err) {
-      console.error('Error loading profile:', err);
+    } catch {}
+    return null;
+  });
+
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const stored = authenticateUser(username, password);
+    if (stored) {
+      const u = storedUserToUser(stored);
+      setUser(u);
+      localStorage.setItem('doorly_current_user', stored.id);
+      return { success: true };
     }
+    return { success: false, error: 'Invalid username or password' };
   };
 
-  useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadProfile(session.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const register = async (username: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { success: false, error: error.message };
-      if (data.user) {
-        await loadProfile(data.user.id);
-        return { success: true };
-      }
-      return { success: false, error: 'Login failed' };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Login failed' };
-    }
-  };
-
-  const register = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
-      if (error) return { success: false, error: error.message };
-      if (data.user) {
-        // Small delay for trigger to create profile
-        await new Promise(r => setTimeout(r, 500));
-        await loadProfile(data.user.id);
-        return { success: true };
-      }
-      return { success: false, error: 'Registration failed' };
+      const { createUser } = await import('../lib/userStore');
+      const stored = createUser({ username, password, fullName, companyName: '', plan: 'starter' });
+      const u = storedUserToUser(stored);
+      setUser(u);
+      localStorage.setItem('doorly_current_user', stored.id);
+      return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Registration failed' };
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
     setUser(null);
+    localStorage.removeItem('doorly_current_user');
   };
 
   const updateCompanyProfile = async (profile: Partial<CompanyProfile>) => {
     if (!user) return;
-    try {
-      const dbUpdates: Record<string, any> = {};
-      if (profile.companyName !== undefined) dbUpdates.company_name = profile.companyName;
-      if (profile.regNumber !== undefined) dbUpdates.reg_number = profile.regNumber;
-      if (profile.vatNumber !== undefined) dbUpdates.vat_number = profile.vatNumber;
-      if (profile.address !== undefined) dbUpdates.address = profile.address;
-      if (profile.city !== undefined) dbUpdates.city = profile.city;
-      if (profile.country !== undefined) dbUpdates.country = profile.country;
-      if (profile.phone !== undefined) dbUpdates.phone = profile.phone;
-      if (profile.email !== undefined) dbUpdates.company_email = profile.email;
-      if (profile.website !== undefined) dbUpdates.website = profile.website;
-      if (profile.logoUrl !== undefined) dbUpdates.logo_url = profile.logoUrl;
-      if (profile.accentColor !== undefined) dbUpdates.accent_color = profile.accentColor;
-      if (profile.stampUrl !== undefined) dbUpdates.stamp_url = profile.stampUrl;
-
-      const updated = await dbUpdateProfile(user.id, dbUpdates);
-      if (updated) {
-        setUser(profileToUser(updated));
-      }
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      throw err;
-    }
+    setUser({
+      ...user,
+      company: { ...user.company!, ...profile },
+    });
   };
 
-  const refreshProfile = async () => {
-    if (user) await loadProfile(user.id);
-  };
+  const refreshProfile = async () => {};
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, register, logout, updateCompanyProfile, refreshProfile }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading: false, login, register, logout, updateCompanyProfile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
