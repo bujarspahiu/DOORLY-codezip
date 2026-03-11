@@ -27,9 +27,9 @@ interface CalculatorProps {
 }
 
 const PRODUCT_IMAGES: Record<string, string> = {
-  window: 'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216314257_917318b2.jpg',
-  door: 'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216403586_e030393c.jpg',
-  slidingDoor: 'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216372879_71402444.png',
+  window: 'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=400&q=80',
+  door: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80',
+  slidingDoor: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
 };
 
 const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {

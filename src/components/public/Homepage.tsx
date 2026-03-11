@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LoginModal from './LoginModal';
 
-const HERO_IMG = 'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216297055_376f3e42.jpg';
+const HERO_IMG = 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&q=80';
 const PRODUCT_IMAGES = [
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216314257_917318b2.jpg',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216316814_510bcf60.jpg',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216317563_87dd6862.jpg',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216372879_71402444.png',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216340112_171ea098.jpg',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216385447_ed9cdc00.png',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216403586_e030393c.jpg',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216404663_9562a1e5.jpg',
-  'https://d64gsuwffb70l.cloudfront.net/69b121b520fe93705068f032_1773216405157_e1500b94.jpg',
+  'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=400&q=80',
+  'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&q=80',
+  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80',
+  'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&q=80',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80',
+  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
+  'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&q=80',
+  'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=400&q=80',
+  'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400&q=80',
 ];
 
 const Homepage: React.FC = () => {
@@ -76,13 +76,8 @@ const Homepage: React.FC = () => {
       <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent">Doorly</span>
+            <div className="flex items-center">
+              <img src="/doorly-logo-nobg.png" alt="Doorly" className="h-12" />
             </div>
 
             <div className="hidden md:flex items-center gap-8">
@@ -329,11 +324,8 @@ const Homepage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-12">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                </div>
-                <span className="text-lg font-bold text-white">Doorly</span>
+              <div className="flex items-center mb-4">
+                <img src="/doorly-logo-nobg.png" alt="Doorly" className="h-9" />
               </div>
               <p className="text-sm leading-relaxed">{t('footer.desc')}</p>
             </div>

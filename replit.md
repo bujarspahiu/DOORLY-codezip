@@ -28,5 +28,10 @@ A SaaS platform for window and door professionals to manage their business opera
 - `src/contexts/` - Auth, Language, App contexts
 - `src/lib/` - Supabase client, database functions, user store
 
+## Branding
+- Logo: `/public/doorly-logo.png` (full), `/public/doorly-logo-nobg.png` (transparent)
+- Used across: navbar, footer, dashboard sidebar, admin panel, admin login, favicon, OG image
+- All external CDN image references replaced with Unsplash stock photos
+
 ## Running
 - `npm run dev` - Start dev server on port 5000
