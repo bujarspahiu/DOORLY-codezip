@@ -1,52 +1,25 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import AdminPanel from '../components/admin/AdminPanel';
 import { AppProvider } from '../contexts/AppContext';
 
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'admin';
+
 const AdminStaff: React.FC = () => {
-  const { user, isAuthenticated, loading, login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
-  if (loading) {
+  if (isAdminLoggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-400 border-t-blue-600 rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-gray-400 font-medium">Loading...</p>
+      <AppProvider>
+        <div className="min-h-screen">
+          <AdminPanel />
         </div>
-      </div>
-    );
-  }
-
-  if (isAuthenticated && user) {
-    if (user.role === 'admin') {
-      return (
-        <AppProvider>
-          <div className="min-h-screen">
-            <AdminPanel />
-          </div>
-        </AppProvider>
-      );
-    }
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-500 mb-6">Your account does not have admin privileges.</p>
-          <a href="/" className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-            Go to Homepage
-          </a>
-        </div>
-      </div>
+      </AppProvider>
     );
   }
 
@@ -54,11 +27,13 @@ const AdminStaff: React.FC = () => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
-    const result = await login(email, password);
-    setSubmitting(false);
-    if (!result.success) {
-      setError(result.error || 'Login failed');
+    await new Promise(r => setTimeout(r, 500));
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      setIsAdminLoggedIn(true);
+    } else {
+      setError('Invalid username or password');
     }
+    setSubmitting(false);
   };
 
   return (
@@ -92,18 +67,19 @@ const AdminStaff: React.FC = () => {
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
                 <div className="relative">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="admin@glazepro.com"
+                    placeholder="Enter username"
                     required
+                    autoComplete="username"
                   />
                 </div>
               </div>
@@ -119,8 +95,9 @@ const AdminStaff: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter password"
                     required
-                    minLength={6}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
