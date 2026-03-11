@@ -334,18 +334,28 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
               <span className="text-gray-600">{t('calc.glassCost')}</span>
               <span className="font-mono font-semibold">€{calculation.glassCost.toFixed(2)}</span>
             </div>
-            {calculation.serviceCost > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('calc.serviceCost')}</span>
-                <span className="font-mono font-semibold">€{calculation.serviceCost.toFixed(2)}</span>
-              </div>
-            )}
-            {calculation.accessoryCost > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">{lang === 'en' ? 'Accessories' : 'Aksesorët'}</span>
-                <span className="font-mono font-semibold">€{calculation.accessoryCost.toFixed(2)}</span>
-              </div>
-            )}
+            {selectedServices.map(sid => {
+              const svc = prices.services.find(s => s.id === sid);
+              if (!svc) return null;
+              const cost = svc.unit === 'flat' ? svc.price : svc.price * quantity;
+              return (
+                <div key={sid} className="flex justify-between">
+                  <span className="text-gray-600">{lang === 'en' ? svc.name : svc.nameAl}</span>
+                  <span className="font-mono font-semibold">€{cost.toFixed(2)}</span>
+                </div>
+              );
+            })}
+            {selectedAccessories.map(aid => {
+              const acc = prices.accessories.find(a => a.id === aid);
+              if (!acc) return null;
+              const cost = acc.price * quantity;
+              return (
+                <div key={aid} className="flex justify-between">
+                  <span className="text-gray-600">{lang === 'en' ? acc.name : acc.nameAl}</span>
+                  <span className="font-mono font-semibold">€{cost.toFixed(2)}</span>
+                </div>
+              );
+            })}
             <div className="border-t border-gray-200 pt-3 flex justify-between">
               <span className="text-gray-600">{t('calc.subtotal')}</span>
               <span className="font-mono font-bold">€{calculation.subtotal.toFixed(2)}</span>
