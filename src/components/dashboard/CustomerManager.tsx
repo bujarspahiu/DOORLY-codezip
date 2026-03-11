@@ -78,8 +78,9 @@ const CustomerManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) return;
     try {
-      await dbDeleteCustomer(id);
+      await dbDeleteCustomer(user.id, id);
       setCustomers(customers.filter(c => c.id !== id));
     } catch (err) {
       console.error('Error deleting customer:', err);

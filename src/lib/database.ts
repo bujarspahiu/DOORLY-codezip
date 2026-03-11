@@ -1,119 +1,72 @@
-import { supabase } from './supabase';
+const LS_PREFIX = 'doorly_';
 
-// ============ PROFILES ============
+function getKey(userId: string, entity: string) {
+  return `${LS_PREFIX}${entity}_${userId}`;
+}
+
+function readLS<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+
+function writeLS(key: string, data: any) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
 export async function getProfile(userId: string) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  if (error) throw error;
-  return data;
+  return readLS(getKey(userId, 'profile'), null);
 }
 
 export async function updateProfile(userId: string, updates: Record<string, any>) {
-  const profileComplete = !!(
-    updates.company_name && updates.reg_number && updates.vat_number &&
-    updates.address && updates.city && updates.country &&
-    updates.phone && updates.company_email
-  );
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ ...updates, profile_complete: profileComplete, updated_at: new Date().toISOString() })
-    .eq('id', userId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const existing = readLS(getKey(userId, 'profile'), {});
+  const merged = { ...existing, ...updates, updated_at: new Date().toISOString() };
+  writeLS(getKey(userId, 'profile'), merged);
+  return merged;
 }
 
-// ============ CUSTOMERS ============
 export async function getCustomers(userId: string) {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  return readLS<any[]>(getKey(userId, 'customers'), []);
 }
 
 export async function createCustomer(userId: string, customer: { name: string; email?: string; phone?: string; address?: string; city?: string; country?: string; reg_number?: string; vat_number?: string; bank_name?: string; bank_account?: string; bank_swift?: string }) {
-  const { data, error } = await supabase
-    .from('customers')
-    .insert({ user_id: userId, ...customer })
-    .select()
-    .single();
-  if (error) throw error;
-  await logActivity(userId, `Added customer: ${customer.name}`, 'customer', data.id);
-  return data;
+  const customers = readLS<any[]>(getKey(userId, 'customers'), []);
+  const newCustomer = {
+    id: `cust-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    user_id: userId,
+    ...customer,
+    created_at: new Date().toISOString(),
+  };
+  customers.unshift(newCustomer);
+  writeLS(getKey(userId, 'customers'), customers);
+  return newCustomer;
 }
 
-export async function deleteCustomer(id: string) {
-  const { error } = await supabase.from('customers').delete().eq('id', id);
-  if (error) throw error;
+export async function deleteCustomer(userId: string, id: string) {
+  const key = getKey(userId, 'customers');
+  const arr = readLS<any[]>(key, []);
+  writeLS(key, arr.filter((c: any) => c.id !== id));
 }
 
-// ============ PRICE CONFIGS ============
 export async function getPriceConfig(userId: string) {
-  const { data, error } = await supabase
-    .from('price_configs')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-  return data;
+  return readLS(getKey(userId, 'priceconfig'), null);
 }
 
 export async function savePriceConfig(userId: string, config: { materials: any[]; glass_types: any[]; services: any[]; accessories: any[] }) {
-  const { data: existing } = await supabase
-    .from('price_configs')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-
-  if (existing) {
-    const { data, error } = await supabase
-      .from('price_configs')
-      .update({ ...config, updated_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  } else {
-    const { data, error } = await supabase
-      .from('price_configs')
-      .insert({ user_id: userId, ...config })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
+  const data = { ...config, user_id: userId, updated_at: new Date().toISOString() };
+  writeLS(getKey(userId, 'priceconfig'), data);
+  return data;
 }
 
-// ============ QUOTES & INVOICES ============
 export async function getQuotes(userId: string, docType: 'quote' | 'invoice') {
-  const { data, error } = await supabase
-    .from('quotes')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('doc_type', docType)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  const all = readLS<any[]>(getKey(userId, 'quotes'), []);
+  return all.filter((q: any) => q.doc_type === docType).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
 export async function getRecentQuotes(userId: string, limit = 5) {
-  const { data, error } = await supabase
-    .from('quotes')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('doc_type', 'quote')
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data || [];
+  const all = readLS<any[]>(getKey(userId, 'quotes'), []);
+  return all.filter((q: any) => q.doc_type === 'quote').sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, limit);
 }
 
 export async function createQuote(userId: string, quote: {
@@ -123,155 +76,69 @@ export async function createQuote(userId: string, quote: {
   customer_bank_account?: string; customer_bank_swift?: string;
   items: any[]; subtotal: number; vat: number; total: number; notes?: string; valid_until?: string;
 }) {
-  const { data, error } = await supabase
-    .from('quotes')
-    .insert({ user_id: userId, ...quote })
-    .select()
-    .single();
-  if (error) throw error;
-  await logActivity(userId, `Created ${quote.doc_type}: ${quote.quote_number}`, quote.doc_type, data.id);
-  return data;
+  const all = readLS<any[]>(getKey(userId, 'quotes'), []);
+  const newQuote = {
+    id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    user_id: userId,
+    status: 'draft',
+    ...quote,
+    created_at: new Date().toISOString(),
+  };
+  all.unshift(newQuote);
+  writeLS(getKey(userId, 'quotes'), all);
+  return newQuote;
 }
 
-export async function updateQuote(id: string, updates: Record<string, any>) {
-  const { data, error } = await supabase
-    .from('quotes')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function updateQuote(userId: string, id: string, updates: Record<string, any>) {
+  const key = getKey(userId, 'quotes');
+  const arr = readLS<any[]>(key, []);
+  const idx = arr.findIndex((q: any) => q.id === id);
+  if (idx >= 0) {
+    arr[idx] = { ...arr[idx], ...updates, updated_at: new Date().toISOString() };
+    writeLS(key, arr);
+    return arr[idx];
+  }
+  return null;
 }
 
-export async function deleteQuote(id: string) {
-  const { error } = await supabase.from('quotes').delete().eq('id', id);
-  if (error) throw error;
+export async function deleteQuote(userId: string, id: string) {
+  const key = getKey(userId, 'quotes');
+  const arr = readLS<any[]>(key, []);
+  writeLS(key, arr.filter((q: any) => q.id !== id));
 }
 
 export async function getNextQuoteNumber(userId: string, docType: 'quote' | 'invoice') {
   const prefix = docType === 'quote' ? 'Q' : 'INV';
   const year = new Date().getFullYear();
-  const { count } = await supabase
-    .from('quotes')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('doc_type', docType);
-  const num = (count || 0) + 1;
-  return `${prefix}-${year}-${String(num).padStart(3, '0')}`;
+  const all = readLS<any[]>(getKey(userId, 'quotes'), []);
+  const count = all.filter((q: any) => q.doc_type === docType).length;
+  return `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
 }
 
-// ============ DASHBOARD STATS ============
 export async function getDashboardStats(userId: string) {
-  const { count: totalQuotes } = await supabase
-    .from('quotes')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('doc_type', 'quote');
-
-  const { count: totalInvoices } = await supabase
-    .from('quotes')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('doc_type', 'invoice');
-
-  const { data: revenueData } = await supabase
-    .from('quotes')
-    .select('total')
-    .eq('user_id', userId)
-    .eq('doc_type', 'invoice');
-
-  const revenue = (revenueData || []).reduce((sum, q) => sum + (parseFloat(q.total) || 0), 0);
-
-  const { count: customerCount } = await supabase
-    .from('customers')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-
+  const all = readLS<any[]>(getKey(userId, 'quotes'), []);
+  const customers = readLS<any[]>(getKey(userId, 'customers'), []);
+  const quotes = all.filter((q: any) => q.doc_type === 'quote');
+  const invoices = all.filter((q: any) => q.doc_type === 'invoice');
+  const revenue = invoices.reduce((sum: number, q: any) => sum + (parseFloat(q.total) || 0), 0);
   return {
-    totalQuotes: totalQuotes || 0,
-    totalInvoices: totalInvoices || 0,
+    totalQuotes: quotes.length,
+    totalInvoices: invoices.length,
     revenue,
-    customerCount: customerCount || 0,
+    customerCount: customers.length,
   };
 }
 
-// ============ ACTIVITY LOGS ============
-export async function logActivity(userId: string, action: string, entityType = '', entityId = '') {
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', userId)
-      .single();
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      user_name: profile?.full_name || '',
-      action,
-      entity_type: entityType,
-      entity_id: entityId,
-    });
-  } catch {
-    // Non-critical, don't throw
-  }
+export async function logActivity(_userId: string, _action: string, _entityType = '', _entityId = '') {
 }
 
-export async function getActivityLogs(userId: string, limit = 20) {
-  const { data, error } = await supabase
-    .from('activity_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data || [];
+export async function getActivityLogs(_userId: string, _limit = 20) {
+  return [];
 }
 
-// ============ ADMIN OPERATIONS (via edge function) ============
-export async function adminGetUsers() {
-  const { data, error } = await supabase.functions.invoke('admin-operations', {
-    body: { action: 'get_users' },
-  });
-  if (error) throw error;
-  return data?.users || [];
-}
-
-export async function adminCreateUser(email: string, fullName: string, companyName: string, plan: string) {
-  const { data, error } = await supabase.functions.invoke('admin-operations', {
-    body: { action: 'create_user', email, password: 'Welcome123!', full_name: fullName, company_name: companyName, plan },
-  });
-  if (error) throw error;
-  return data;
-}
-
-export async function adminUpdateStatus(userId: string, status: 'active' | 'suspended') {
-  const { data, error } = await supabase.functions.invoke('admin-operations', {
-    body: { action: 'update_status', user_id: userId, status },
-  });
-  if (error) throw error;
-  return data;
-}
-
-export async function adminDeleteUser(userId: string) {
-  const { data, error } = await supabase.functions.invoke('admin-operations', {
-    body: { action: 'delete_user', user_id: userId },
-  });
-  if (error) throw error;
-  return data;
-}
-
-export async function adminGetActivity() {
-  const { data, error } = await supabase.functions.invoke('admin-operations', {
-    body: { action: 'get_activity' },
-  });
-  if (error) throw error;
-  return data?.logs || [];
-}
-
-export async function adminGetStats() {
-  const { data, error } = await supabase.functions.invoke('admin-operations', {
-    body: { action: 'get_stats' },
-  });
-  if (error) throw error;
-  return data?.stats || {};
-}
+export async function adminGetUsers() { return []; }
+export async function adminCreateUser(_email: string, _fullName: string, _companyName: string, _plan: string) { return {}; }
+export async function adminUpdateStatus(_userId: string, _status: 'active' | 'suspended') { return {}; }
+export async function adminDeleteUser(_userId: string) { return {}; }
+export async function adminGetActivity() { return []; }
+export async function adminGetStats() { return {}; }

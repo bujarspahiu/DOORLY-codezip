@@ -40,6 +40,7 @@ interface QuoteManagerProps {
   type?: 'quote' | 'invoice';
   initialCalcItems?: CalcItem[] | null;
   onCalcItemsConsumed?: () => void;
+  onConvertToInvoice?: (quote: any) => void;
 }
 
 function calcItemsToQuoteItems(items: CalcItem[]): QuoteItem[] {
@@ -78,7 +79,7 @@ function calcItemsToQuoteItems(items: CalcItem[]): QuoteItem[] {
   return result;
 }
 
-const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalcItems, onCalcItemsConsumed }) => {
+const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalcItems, onCalcItemsConsumed, onConvertToInvoice }) => {
   const { lang } = useLanguage();
   const { user } = useAuth();
   const accent = user?.company?.accentColor || '#2563EB';
@@ -193,7 +194,7 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalc
         items: form.items, subtotal: formSubtotal, vat: formVat, total: formTotal, notes: form.notes,
       };
       if (editingId) {
-        await updateQuote(editingId, payload);
+        await updateQuote(user.id, editingId, payload);
       } else {
         const qNum = await getNextQuoteNumber(user.id, type);
         await createQuote(user.id, {
@@ -244,7 +245,38 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalc
   };
 
   const handleDelete = async (id: string) => {
-    try { await dbDeleteQuote(id); setQuotes(quotes.filter(q => q.id !== id)); } catch (err) { console.error(err); }
+    if (!user) return;
+    try { await dbDeleteQuote(user.id, id); setQuotes(quotes.filter(q => q.id !== id)); } catch (err) { console.error(err); }
+  };
+
+  const handlePrint = () => {
+    const printContent = document.getElementById('quote-preview-content');
+    if (!printContent) return;
+    const win = window.open('', '_blank', 'width=800,height=1000');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>${typeLabel}</title><style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; color: #111; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 8px 12px; text-align: left; }
+      .text-right { text-align: right; }
+      .font-bold { font-weight: 700; }
+      .font-semibold { font-weight: 600; }
+      .font-mono { font-family: 'SF Mono', 'Courier New', monospace; }
+      .text-sm { font-size: 0.875rem; }
+      .text-xs { font-size: 0.75rem; }
+      .text-gray-600 { color: #4B5563; }
+      .text-gray-500 { color: #6B7280; }
+      .mb-6 { margin-bottom: 1.5rem; }
+      .mt-8 { margin-top: 2rem; }
+      .p-4 { padding: 1rem; }
+      .bg-gray-50 { background: #F9FAFB; }
+      .rounded-lg { border-radius: 0.5rem; }
+      .border-gray-200 { border: 1px solid #E5E7EB; }
+      @media print { body { padding: 0; } }
+    </style></head><body>${printContent.innerHTML}</body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); }, 300);
   };
 
   const typeLabel = isInvoice ? (lang === 'en' ? 'Invoice' : 'Faturë') : (lang === 'en' ? 'Quote' : 'Ofertë');
@@ -356,10 +388,13 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalc
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(q.created_at).toLocaleDateString()}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setPreviewQuote(q)} className="p-2 text-gray-400 hover:text-blue-600" title="Preview"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
-                        <button onClick={() => editQuote(q)} className="p-2 text-gray-400 hover:text-yellow-600" title="Edit"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                        <button onClick={() => duplicateQuote(q)} className="p-2 text-gray-400 hover:text-green-600" title="Duplicate"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
-                        <button onClick={() => handleDelete(q.id)} className="p-2 text-gray-400 hover:text-red-600" title="Delete"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        <button onClick={() => setPreviewQuote(q)} className="p-2 text-gray-400 hover:text-blue-600" title={lang === 'en' ? 'Preview' : 'Shiko'}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                        <button onClick={() => editQuote(q)} className="p-2 text-gray-400 hover:text-yellow-600" title={lang === 'en' ? 'Edit' : 'Ndrysho'}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                        <button onClick={() => duplicateQuote(q)} className="p-2 text-gray-400 hover:text-green-600" title={lang === 'en' ? 'Duplicate' : 'Dupliko'}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+                        {!isInvoice && onConvertToInvoice && (
+                          <button onClick={() => onConvertToInvoice(q)} className="p-2 text-gray-400 hover:text-purple-600" title={lang === 'en' ? 'Convert to Invoice' : 'Konverto në Faturë'}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg></button>
+                        )}
+                        <button onClick={() => handleDelete(q.id)} className="p-2 text-gray-400 hover:text-red-600" title={lang === 'en' ? 'Delete' : 'Fshij'}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                       </div>
                     </td>
                   </tr>
@@ -377,11 +412,14 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalc
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
               <h3 className="font-bold text-gray-900">{typeLabel} {previewQuote.quote_number}</h3>
               <div className="flex items-center gap-2">
-                <button onClick={() => window.print()} className="px-4 py-2 text-sm font-medium text-white rounded-lg" style={{ backgroundColor: accent }}>{lang === 'en' ? 'Print' : 'Printo'}</button>
+                <button onClick={handlePrint} className="px-4 py-2 text-sm font-medium text-white rounded-lg" style={{ backgroundColor: accent }}>{lang === 'en' ? 'Print' : 'Printo'}</button>
+                {!isInvoice && onConvertToInvoice && (
+                  <button onClick={() => { onConvertToInvoice(previewQuote); setPreviewQuote(null); }} className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-purple-600 hover:bg-purple-700">{lang === 'en' ? 'Convert to Invoice' : 'Konverto në Faturë'}</button>
+                )}
                 <button onClick={() => setPreviewQuote(null)} className="p-2 text-gray-400 hover:text-gray-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
               </div>
             </div>
-            <div className="p-8">
+            <div id="quote-preview-content" className="p-8">
               <div className="flex justify-between items-start border-b-2 pb-6 mb-6" style={{ borderColor: accent }}>
                 <div className="flex items-start gap-4">
                   {user?.company?.logoUrl && (

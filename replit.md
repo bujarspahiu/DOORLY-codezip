@@ -6,7 +6,7 @@ A SaaS platform for window and door professionals to manage their business opera
 - **Frontend**: React 18 + TypeScript
 - **Build Tool**: Vite (dev server on port 5000)
 - **Styling**: Tailwind CSS + shadcn/ui
-- **Backend/Database**: Supabase (for data), localStorage (for user auth)
+- **Backend/Database**: localStorage (all data: auth, quotes, invoices, customers, prices)
 - **Routing**: React Router DOM v6
 - **State**: TanStack Query + React Context
 - **Forms**: React Hook Form + Zod
@@ -26,7 +26,7 @@ A SaaS platform for window and door professionals to manage their business opera
 - `src/components/dashboard/` - Business dashboard components
 - `src/components/admin/` - Admin panel
 - `src/contexts/` - Auth, Language, App contexts
-- `src/lib/` - Supabase client, database functions, user store
+- `src/lib/` - Database functions (localStorage-based), user store
 
 ## Company Profile & Customers
 - Company Profile has: company info (mandatory), bank account details (mandatory), logo upload, branding colors
@@ -34,6 +34,10 @@ A SaaS platform for window and door professionals to manage their business opera
 - Company profile data is persisted in localStorage per user (`doorly_company_{userId}`)
 - When creating quotes/invoices, user can select existing customer to auto-fill all fields
 - Invoice/quote preview shows both company and customer details, including bank payment details and company logo
+- Calculator items (with services & accessories) transfer as itemized line items to quotes
+- Quotes can be converted to invoices via "Convert to Invoice" button
+- Print opens a clean print window with just the document content
+- All data (quotes, invoices, customers, prices) stored in localStorage per user
 
 ## Branding
 - Logo: `/public/doorly-logo.png` (full), `/public/doorly-logo-nobg.png` (transparent)
