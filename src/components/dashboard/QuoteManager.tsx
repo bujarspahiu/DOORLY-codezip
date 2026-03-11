@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getQuotes, createQuote, updateQuote, deleteQuote as dbDeleteQuote, getNextQuoteNumber, getCustomers } from '../../lib/database';
+import type { CalcItem } from './Calculator';
 
 interface QuoteItem {
   description: string;
@@ -37,9 +38,24 @@ interface Quote {
 
 interface QuoteManagerProps {
   type?: 'quote' | 'invoice';
+  initialCalcItems?: CalcItem[] | null;
+  onCalcItemsConsumed?: () => void;
 }
 
-const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
+function calcItemsToQuoteItems(items: CalcItem[]): QuoteItem[] {
+  return items.map(item => {
+    const typeLabel = item.productType === 'window' ? 'Window' : item.productType === 'door' ? 'Door' : 'Sliding Door';
+    const desc = `${typeLabel} ${item.width}x${item.height}m — ${item.material}`;
+    return {
+      description: desc,
+      quantity: item.quantity,
+      unitPrice: Math.round((item.subtotal / item.quantity) * 100) / 100,
+      total: item.subtotal,
+    };
+  });
+}
+
+const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalcItems, onCalcItemsConsumed }) => {
   const { lang } = useLanguage();
   const { user } = useAuth();
   const accent = user?.company?.accentColor || '#2563EB';
@@ -60,6 +76,19 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote' }) => {
     notes: '',
     items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }] as QuoteItem[],
   });
+
+  useEffect(() => {
+    if (initialCalcItems && initialCalcItems.length > 0) {
+      const quoteItems = calcItemsToQuoteItems(initialCalcItems);
+      setForm(prev => ({
+        ...prev,
+        items: quoteItems,
+      }));
+      setShowForm(true);
+      setEditingId(null);
+      onCalcItemsConsumed?.();
+    }
+  }, [initialCalcItems]);
 
   useEffect(() => {
     if (!user) return;
