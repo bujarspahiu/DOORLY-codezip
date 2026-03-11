@@ -43,16 +43,39 @@ interface QuoteManagerProps {
 }
 
 function calcItemsToQuoteItems(items: CalcItem[]): QuoteItem[] {
-  return items.map(item => {
+  const result: QuoteItem[] = [];
+  items.forEach(item => {
     const typeLabel = item.productType === 'window' ? 'Window' : item.productType === 'door' ? 'Door' : 'Sliding Door';
-    const desc = `${typeLabel} ${item.width}x${item.height}m — ${item.material}`;
-    return {
-      description: desc,
+    const productCost = item.materialCost + item.glassCost;
+    result.push({
+      description: `${typeLabel} ${item.width}x${item.height}m — ${item.materialName}, ${item.glassName}`,
       quantity: item.quantity,
-      unitPrice: Math.round((item.subtotal / item.quantity) * 100) / 100,
-      total: item.subtotal,
-    };
+      unitPrice: Math.round((productCost / item.quantity) * 100) / 100,
+      total: Math.round(productCost * 100) / 100,
+    });
+    if (item.serviceDetails && item.serviceDetails.length > 0) {
+      item.serviceDetails.forEach(svc => {
+        const qty = svc.unit === 'flat' ? 1 : item.quantity;
+        result.push({
+          description: `  ${svc.name}`,
+          quantity: qty,
+          unitPrice: svc.price,
+          total: Math.round(svc.price * qty * 100) / 100,
+        });
+      });
+    }
+    if (item.accessoryDetails && item.accessoryDetails.length > 0) {
+      item.accessoryDetails.forEach(acc => {
+        result.push({
+          description: `  ${acc.name}`,
+          quantity: item.quantity,
+          unitPrice: acc.price,
+          total: Math.round(acc.price * item.quantity * 100) / 100,
+        });
+      });
+    }
   });
+  return result;
 }
 
 const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalcItems, onCalcItemsConsumed }) => {

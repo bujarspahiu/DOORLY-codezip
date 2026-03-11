@@ -4,6 +4,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import { defaultPrices, PriceConfig } from './PriceManagement';
 import { getPriceConfig } from '../../lib/database';
 
+export interface CalcItemService {
+  id: string;
+  name: string;
+  price: number;
+  unit: string;
+}
+
+export interface CalcItemAccessory {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface CalcItem {
   id: string;
   productType: string;
@@ -11,9 +24,13 @@ export interface CalcItem {
   height: number;
   quantity: number;
   material: string;
+  materialName: string;
   glassType: string;
+  glassName: string;
   services: string[];
+  serviceDetails: CalcItemService[];
   accessories: string[];
+  accessoryDetails: CalcItemAccessory[];
   area: number;
   materialCost: number;
   glassCost: number;
@@ -105,10 +122,27 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
   }, [width, height, quantity, material, glassType, selectedServices, selectedAccessories, prices]);
 
   const addItem = () => {
+    const mat = prices.materials.find(m => m.id === material);
+    const glass = prices.glassTypes.find(g => g.id === glassType);
+    const svcDetails: CalcItemService[] = selectedServices.map(sid => {
+      const s = prices.services.find(sv => sv.id === sid);
+      return s ? { id: s.id, name: s.name, price: s.price, unit: s.unit } : null;
+    }).filter(Boolean) as CalcItemService[];
+    const accDetails: CalcItemAccessory[] = selectedAccessories.map(aid => {
+      const a = prices.accessories.find(ac => ac.id === aid);
+      return a ? { id: a.id, name: a.name, price: a.price } : null;
+    }).filter(Boolean) as CalcItemAccessory[];
+
     const newItem: CalcItem = {
       id: `item-${Date.now()}`,
-      productType, width, height, quantity, material, glassType,
-      services: selectedServices, accessories: selectedAccessories,
+      productType, width, height, quantity, material,
+      materialName: mat?.name || material,
+      glassType,
+      glassName: glass?.name || glassType,
+      services: selectedServices,
+      serviceDetails: svcDetails,
+      accessories: selectedAccessories,
+      accessoryDetails: accDetails,
       area: calculation.totalArea,
       materialCost: calculation.materialCost,
       glassCost: calculation.glassCost,
@@ -342,23 +376,48 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
             <h3 className="font-bold text-gray-900 mb-4">{lang === 'en' ? 'Added Items' : 'Artikujt e Shtuar'} ({items.length})</h3>
             <div className="space-y-3">
               {items.map((item, idx) => {
-                const matName = prices.materials.find(m => m.id === item.material);
                 return (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        #{idx + 1} {item.productType === 'window' ? t('calc.window') : item.productType === 'door' ? t('calc.door') : t('calc.slidingDoor')}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {item.width}x{item.height}m | {lang === 'en' ? matName?.name : matName?.nameAl} | x{item.quantity}
-                      </p>
+                  <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          #{idx + 1} {item.productType === 'window' ? t('calc.window') : item.productType === 'door' ? t('calc.door') : t('calc.slidingDoor')}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {item.width}x{item.height}m | {item.materialName} | {item.glassName} | x{item.quantity}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold">€{item.subtotal.toFixed(2)}</span>
+                        <button onClick={() => removeItem(item.id)} className="p-1 text-red-400 hover:text-red-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">€{item.subtotal.toFixed(2)}</span>
-                      <button onClick={() => removeItem(item.id)} className="p-1 text-red-400 hover:text-red-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
+                    {(item.serviceDetails.length > 0 || item.accessoryDetails.length > 0) && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                        {item.serviceDetails.length > 0 && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-xs text-gray-400 mt-0.5">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            </span>
+                            <p className="text-xs text-gray-500">
+                              {item.serviceDetails.map(s => `${s.name} (€${s.price})`).join(', ')}
+                            </p>
+                          </div>
+                        )}
+                        {item.accessoryDetails.length > 0 && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-xs text-gray-400 mt-0.5">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                            </span>
+                            <p className="text-xs text-gray-500">
+                              {item.accessoryDetails.map(a => `${a.name} (€${a.price})`).join(', ')}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
