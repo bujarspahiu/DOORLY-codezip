@@ -27,9 +27,9 @@ interface CalculatorProps {
 }
 
 const PRODUCT_IMAGES: Record<string, string> = {
-  window: 'https://images.unsplash.com/photo-1585128792020-803d29415281?w=400&q=80',
-  door: 'https://images.unsplash.com/photo-1506269351674-09ba2e5ef5d5?w=400&q=80',
-  slidingDoor: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&q=80',
+  window: '/products/window.png',
+  door: '/products/door.png',
+  slidingDoor: '/products/sliding-door.png',
 };
 
 const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
