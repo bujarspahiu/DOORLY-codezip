@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getAllBusinessUsers, createUser, updateUserStatus, deleteUserById, type StoredUser } from '../../lib/userStore';
+import { getAllBusinessUsers, createUser, updateUserStatus, deleteUserById, getAllUsers, type StoredUser } from '../../lib/userStore';
 
 const AdminPanel: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   const { lang, setLang } = useLanguage();
@@ -15,6 +15,8 @@ const AdminPanel: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   const [searchUsers, setSearchUsers] = useState('');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [importMsg, setImportMsg] = useState('');
+  const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadData(); }, []);
 
