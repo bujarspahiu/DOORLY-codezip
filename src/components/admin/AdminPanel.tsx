@@ -42,23 +42,37 @@ const AdminPanel: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   };
 
   const addUser = async () => {
+    if (!userForm.username.trim() || !userForm.name.trim()) {
+      setFormError(lang === 'en' ? 'Name and username are required' : 'Emri dhe emri i përdoruesit janë të detyrueshëm');
+      return;
+    }
+    if (!userForm.password.trim()) {
+      setFormError(lang === 'en' ? 'Password is required' : 'Fjalëkalimi është i detyrueshëm');
+      return;
+    }
     setSaving(true);
     setFormError('');
     try {
       await createUser({
-        username: userForm.username,
+        username: userForm.username.trim(),
         password: userForm.password,
-        fullName: userForm.name,
-        companyName: userForm.company,
+        fullName: userForm.name.trim(),
+        companyName: userForm.company.trim(),
         plan: userForm.plan,
       });
       setShowUserForm(false);
       setUserForm({ name: '', username: '', password: 'welcome123', company: '', plan: 'starter' });
       await loadData();
     } catch (err: any) {
-      setFormError(err.message || 'Failed to create user');
+      const msg = err?.message || '';
+      if (msg.includes('already exists')) {
+        setFormError(lang === 'en' ? 'This username is already taken. Please choose another.' : 'Ky emër përdoruesi është i zënë. Ju lutem zgjidhni një tjetër.');
+      } else {
+        setFormError(msg || (lang === 'en' ? 'Failed to create user' : 'Dështoi krijimi i përdoruesit'));
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const filteredUsers = users.filter(u =>
