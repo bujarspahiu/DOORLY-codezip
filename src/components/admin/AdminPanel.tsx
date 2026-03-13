@@ -20,28 +20,32 @@ const AdminPanel: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
 
   useEffect(() => { loadData(); }, []);
 
-  const loadData = () => {
-    const businessUsers = getAllBusinessUsers();
-    setUsers(businessUsers);
+  const loadData = async () => {
+    try {
+      const businessUsers = await getAllBusinessUsers();
+      setUsers(businessUsers);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    }
     setLoadingUsers(false);
   };
 
-  const toggleUserStatus = (id: string, currentStatus: string) => {
+  const toggleUserStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
-    updateUserStatus(id, newStatus as any);
     setUsers(users.map(u => u.id === id ? { ...u, status: newStatus as any } : u));
+    await updateUserStatus(id, newStatus as any);
   };
 
-  const handleDeleteUser = (id: string) => {
-    deleteUserById(id);
+  const handleDeleteUser = async (id: string) => {
     setUsers(users.filter(u => u.id !== id));
+    await deleteUserById(id);
   };
 
-  const addUser = () => {
+  const addUser = async () => {
     setSaving(true);
     setFormError('');
     try {
-      createUser({
+      await createUser({
         username: userForm.username,
         password: userForm.password,
         fullName: userForm.name,
@@ -50,7 +54,7 @@ const AdminPanel: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
       });
       setShowUserForm(false);
       setUserForm({ name: '', username: '', password: 'welcome123', company: '', plan: 'starter' });
-      loadData();
+      await loadData();
     } catch (err: any) {
       setFormError(err.message || 'Failed to create user');
     }

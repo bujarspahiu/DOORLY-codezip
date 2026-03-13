@@ -6,19 +6,35 @@ A SaaS platform for window and door professionals to manage their business opera
 - **Frontend**: React 18 + TypeScript
 - **Build Tool**: Vite (dev server on port 5000)
 - **Styling**: Tailwind CSS + shadcn/ui
-- **Backend/Database**: localStorage (all data: auth, quotes, invoices, customers, prices)
+- **Backend**: Node.js + Express (API server on port 3001)
+- **Database**: SQLite (better-sqlite3) — single file at `data/doorly.db`
 - **Routing**: React Router DOM v6
 - **State**: TanStack Query + React Context
 - **Forms**: React Hook Form + Zod
 
+## Architecture
+- In development: Vite dev server (port 5000) proxies `/api` requests to Express (port 3001)
+- In production (VPS): Express serves both static files from `dist/` and the API on one port
+- `data/` directory is in `.gitignore` — code updates never touch the database
+- Database auto-creates tables and seeds default users on first run
+
+## Database Tables
+- `users` — All users (admin + business)
+- `customers` — Per-user customer records
+- `quotes` — Quotes and invoices (distinguished by `doc_type`)
+- `quote_items` — Line items for each quote/invoice
+- `price_configs` — Per-user pricing (materials, glass, services, accessories as JSON)
+- `company_profiles` — Per-user company profile (as JSON)
+
 ## Auth System
-- Users authenticate with **username/password** (stored in localStorage)
+- Users authenticate with **username/password** via `/api/auth/login`
 - Default test user: username `demo`, password `demo`
 - Admin panel at `/adminstaff` with username `admin`, password `admin`
 - Admin can create/manage business users from the panel
-- User store: `src/lib/userStore.ts`
+- Session persistence: user ID stored in localStorage, validated against API on reload
 
 ## Project Structure
+- `server.js` - Express API server + SQLite database
 - `src/main.tsx` - App entry point
 - `src/App.tsx` - Root component with providers and routing
 - `src/pages/` - Page components (Index, AdminStaff, NotFound)
@@ -26,23 +42,23 @@ A SaaS platform for window and door professionals to manage their business opera
 - `src/components/dashboard/` - Business dashboard components
 - `src/components/admin/` - Admin panel
 - `src/contexts/` - Auth, Language, App contexts
-- `src/lib/` - Database functions (localStorage-based), user store
+- `src/lib/userStore.ts` - User API client (fetch-based)
+- `src/lib/database.ts` - Business data API client (fetch-based)
 
 ## Company Profile & Customers
-- Company Profile has: company info (mandatory), bank account details (mandatory), logo upload, branding colors
+- Company Profile has: company info, bank account details, logo upload, branding colors
 - Customer has: same fields as company (name, email, phone, address, city, country, reg number, VAT, bank details) but only name is mandatory
-- Company profile data is persisted in localStorage per user (`doorly_company_{userId}`)
 - When creating quotes/invoices, user can select existing customer to auto-fill all fields
 - Invoice/quote preview shows both company and customer details, including bank payment details and company logo
 - Calculator items (with services & accessories) transfer as itemized line items to quotes
 - Quotes can be converted to invoices via "Convert to Invoice" button
 - Print opens a clean print window with just the document content
-- All data (quotes, invoices, customers, prices) stored in localStorage per user
 
 ## Branding
 - Logo: `/public/doorly-logo.png` (full), `/public/doorly-logo-nobg.png` (transparent)
 - Used across: navbar, footer, dashboard sidebar, admin panel, admin login, favicon, OG image
-- All external CDN image references replaced with Unsplash stock photos
 
 ## Running
-- `npm run dev` - Start dev server on port 5000
+- Development: `npm run dev` — starts Express API + Vite dev server
+- Production: `npm run build && npm start` — builds frontend, then starts Express serving everything
+- VAT rate: 18% (hardcoded)

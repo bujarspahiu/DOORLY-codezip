@@ -11,105 +11,62 @@ export interface StoredUser {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'doorly_users';
+const API_BASE = '/api';
 
-const DEFAULT_USERS: StoredUser[] = [
-  {
-    id: 'admin-001',
-    username: 'admin',
-    password: 'admin',
-    fullName: 'Super Admin',
-    email: 'admin@doorly.com',
-    role: 'admin',
-    plan: 'enterprise',
-    status: 'active',
-    companyName: 'Doorly Platform',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'user-001',
-    username: 'demo',
-    password: 'demo',
-    fullName: 'Demo User',
-    email: 'demo@doorly.com',
-    role: 'business',
-    plan: 'professional',
-    status: 'active',
-    companyName: 'Demo Windows & Doors',
-    createdAt: new Date().toISOString(),
-  },
-];
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${url}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
 
-function getUsers(): StoredUser[] {
+export async function authenticateUser(username: string, password: string): Promise<StoredUser | null> {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-      return DEFAULT_USERS;
-    }
-    return JSON.parse(stored);
+    const user = await apiFetch<StoredUser>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+    return user;
   } catch {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-    return DEFAULT_USERS;
+    return null;
   }
 }
 
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+export async function getAllBusinessUsers(): Promise<StoredUser[]> {
+  return apiFetch<StoredUser[]>('/users/business');
 }
 
-export function authenticateUser(username: string, password: string): StoredUser | null {
-  const users = getUsers();
-  const user = users.find(u => u.username === username && u.password === password);
-  if (user && user.status === 'active') return user;
-  if (user && user.status === 'suspended') return null;
-  return null;
+export async function getAllUsers(): Promise<StoredUser[]> {
+  return apiFetch<StoredUser[]>('/users');
 }
 
-export function getAllBusinessUsers(): StoredUser[] {
-  return getUsers().filter(u => u.role === 'business');
-}
-
-export function getAllUsers(): StoredUser[] {
-  return getUsers();
-}
-
-export function createUser(data: { username: string; password: string; fullName: string; companyName: string; plan: string }): StoredUser {
-  const users = getUsers();
-  if (users.find(u => u.username === data.username)) {
-    throw new Error('Username already exists');
-  }
-  const newUser: StoredUser = {
-    id: `user-${Date.now()}`,
-    username: data.username,
-    password: data.password,
-    fullName: data.fullName,
-    email: `${data.username}@doorly.com`,
-    role: 'business',
-    plan: data.plan,
-    status: 'active',
-    companyName: data.companyName,
-    createdAt: new Date().toISOString(),
-  };
-  users.push(newUser);
-  saveUsers(users);
-  return newUser;
-}
-
-export function updateUserStatus(userId: string, status: 'active' | 'suspended') {
-  const users = getUsers();
-  const idx = users.findIndex(u => u.id === userId);
-  if (idx >= 0) {
-    users[idx].status = status;
-    saveUsers(users);
+export async function getUserById(userId: string): Promise<StoredUser | null> {
+  try {
+    return await apiFetch<StoredUser>(`/users/${userId}`);
+  } catch {
+    return null;
   }
 }
 
-export function deleteUserById(userId: string) {
-  const users = getUsers().filter(u => u.id !== userId);
-  saveUsers(users);
+export async function createUser(data: { username: string; password: string; fullName: string; companyName: string; plan: string }): Promise<StoredUser> {
+  return apiFetch<StoredUser>('/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
-export function getUserById(userId: string): StoredUser | null {
-  return getUsers().find(u => u.id === userId) || null;
+export async function updateUserStatus(userId: string, status: 'active' | 'suspended'): Promise<void> {
+  await apiFetch(`/users/${userId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteUserById(userId: string): Promise<void> {
+  await apiFetch(`/users/${userId}`, { method: 'DELETE' });
 }
