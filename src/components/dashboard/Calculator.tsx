@@ -162,38 +162,37 @@ const SLIDING_DOOR_TEMPLATES: TemplateItem[] = [
   { id: 's15', row: 4, col: 2, label: 'Panoramic R', labelAl: 'Panoramike Dj' },
 ];
 
-const TEMPLATE_SHEETS: Record<string, { src: string; cols: number; rows: number; templates: TemplateItem[] }> = {
+export const TEMPLATE_SHEETS: Record<string, { src: string; cols: number; rows: number; templates: TemplateItem[] }> = {
   window: { src: '/templates/windows.png', cols: 8, rows: 6, templates: WINDOW_TEMPLATES },
   door: { src: '/templates/doors.png', cols: 8, rows: 5, templates: DOOR_TEMPLATES },
   slidingDoor: { src: '/templates/sliding-doors.png', cols: 3, rows: 5, templates: SLIDING_DOOR_TEMPLATES },
 };
 
-const MATERIAL_SUBCATEGORIES: Record<string, { id: string; name: string; nameAl: string }[]> = {
+interface MaterialColor {
+  id: string;
+  name: string;
+  nameAl: string;
+  brands: string[];
+}
+
+const PVC_BRANDS = ['VEKA', 'REHAU', 'Kömmerling', 'Salamander', 'Gealan'];
+const ALU_BRANDS = ['Alumil', 'Schüco', 'Reynaers', 'Aluprof', 'Wicona', 'Cortizo'];
+
+const MATERIAL_COLORS: Record<string, MaterialColor[]> = {
   pvc: [
-    { id: 'pvc-white', name: 'White PVC', nameAl: 'PVC Bardhë' },
-    { id: 'pvc-cream', name: 'Cream PVC', nameAl: 'PVC Krem' },
-    { id: 'pvc-grey', name: 'Grey PVC', nameAl: 'PVC Gri' },
-    { id: 'pvc-anthracite', name: 'Anthracite PVC', nameAl: 'PVC Antracit' },
-    { id: 'pvc-golden-oak', name: 'Golden Oak PVC', nameAl: 'PVC Lis i Artë' },
-    { id: 'pvc-walnut', name: 'Walnut PVC', nameAl: 'PVC Arrë' },
+    { id: 'pvc-white', name: 'White', nameAl: 'Bardhë', brands: PVC_BRANDS },
+    { id: 'pvc-cream', name: 'Cream', nameAl: 'Krem', brands: PVC_BRANDS },
+    { id: 'pvc-grey', name: 'Grey', nameAl: 'Gri', brands: PVC_BRANDS },
+    { id: 'pvc-anthracite', name: 'Anthracite', nameAl: 'Antracit', brands: PVC_BRANDS },
+    { id: 'pvc-golden-oak', name: 'Golden Oak', nameAl: 'Lis i Artë', brands: PVC_BRANDS },
+    { id: 'pvc-walnut', name: 'Walnut', nameAl: 'Arrë', brands: PVC_BRANDS },
   ],
   aluminum: [
-    { id: 'alu-natural', name: 'Natural Aluminum', nameAl: 'Alumin Natyral' },
-    { id: 'alu-white', name: 'White Aluminum', nameAl: 'Alumin Bardhë' },
-    { id: 'alu-black', name: 'Black Aluminum', nameAl: 'Alumin Zi' },
-    { id: 'alu-bronze', name: 'Bronze Aluminum', nameAl: 'Alumin Bronzi' },
-    { id: 'alu-grey', name: 'Grey Aluminum', nameAl: 'Alumin Gri' },
-  ],
-  wood: [
-    { id: 'wood-pine', name: 'Pine Wood', nameAl: 'Dru Pisha' },
-    { id: 'wood-oak', name: 'Oak Wood', nameAl: 'Dru Lisi' },
-    { id: 'wood-meranti', name: 'Meranti Wood', nameAl: 'Dru Meranti' },
-    { id: 'wood-larch', name: 'Larch Wood', nameAl: 'Dru Larice' },
-  ],
-  steel: [
-    { id: 'steel-galvanized', name: 'Galvanized Steel', nameAl: 'Çelik Galvanizuar' },
-    { id: 'steel-painted', name: 'Painted Steel', nameAl: 'Çelik i Lyer' },
-    { id: 'steel-stainless', name: 'Stainless Steel', nameAl: 'Çelik Inoks' },
+    { id: 'alu-natural', name: 'Natural', nameAl: 'Natyral', brands: ALU_BRANDS },
+    { id: 'alu-white', name: 'White', nameAl: 'Bardhë', brands: ALU_BRANDS },
+    { id: 'alu-black', name: 'Black', nameAl: 'Zi', brands: ALU_BRANDS },
+    { id: 'alu-bronze', name: 'Bronze', nameAl: 'Bronzi', brands: ALU_BRANDS },
+    { id: 'alu-grey', name: 'Grey', nameAl: 'Gri', brands: ALU_BRANDS },
   ],
 };
 
@@ -209,11 +208,12 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
       try {
         const config = await getPriceConfig(user.id);
         if (config) {
+          const filterEnabled = <T extends { enabled?: boolean }>(items: T[]) => items.filter(i => i.enabled !== false);
           setPrices({
-            materials: config.materials || defaultPrices.materials,
-            glassTypes: config.glass_types || defaultPrices.glassTypes,
-            services: config.services || defaultPrices.services,
-            accessories: config.accessories || defaultPrices.accessories,
+            materials: filterEnabled(config.materials || defaultPrices.materials),
+            glassTypes: filterEnabled(config.glass_types || defaultPrices.glassTypes),
+            services: filterEnabled(config.services || defaultPrices.services),
+            accessories: filterEnabled(config.accessories || defaultPrices.accessories),
           });
         }
       } catch { /* use defaults */ }
@@ -228,8 +228,10 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
   const [height, setHeight] = useState(1.4);
   const [quantity, setQuantity] = useState(1);
   const [material, setMaterial] = useState('pvc');
-  const [materialSub, setMaterialSub] = useState('pvc-white');
+  const [materialColor, setMaterialColor] = useState('pvc-white');
+  const [materialBrand, setMaterialBrand] = useState('VEKA');
   const [expandedMaterial, setExpandedMaterial] = useState<string>('pvc');
+  const [expandedColor, setExpandedColor] = useState<string>('pvc-white');
   const [glassType, setGlassType] = useState('double');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedAccessories, setSelectedAccessories] = useState<string[]>([]);
@@ -339,14 +341,20 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
       return a ? { id: a.id, name: a.name + (accessoryQty[aid] > 1 ? ` x${accessoryQty[aid]}` : ''), price: a.price } : null;
     }).filter(Boolean) as CalcItemAccessory[];
 
-    const subName = materialSub ? (MATERIAL_SUBCATEGORIES[material]?.find(s => s.id === materialSub)?.[lang === 'en' ? 'name' : 'nameAl'] || '') : '';
+    const colors = MATERIAL_COLORS[material];
+    const colorObj = colors?.find(c => c.id === materialColor);
+    const colorName = colorObj ? (lang === 'en' ? colorObj.name : colorObj.nameAl) : '';
+    const brandName = (colors && materialBrand) ? materialBrand : '';
+    const fullMaterialName = (mat ? (lang === 'en' ? mat.name : mat.nameAl) : material)
+      + (colorName ? ` - ${colorName}` : '')
+      + (brandName ? ` (${brandName})` : '');
 
     const newItem: CalcItem = {
       id: `item-${Date.now()}`,
       productType,
       templateId: selectedTemplate,
       width, height, quantity, material,
-      materialName: (mat ? (lang === 'en' ? mat.name : mat.nameAl) : material) + (subName ? ` - ${subName}` : ''),
+      materialName: fullMaterialName,
       glassType,
       glassName: glass ? (lang === 'en' ? glass.name : glass.nameAl) : glassType,
       services: selectedServices,
@@ -503,17 +511,6 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
           </div>
         )}
 
-        {!selectedTemplate && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
-            <svg className="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
-            <p className="font-medium text-blue-800">
-              {lang === 'en' ? 'Click a product type above to select a template' : 'Klikoni një lloj produkti më lart për të zgjedhur shabllonin'}
-            </p>
-            <button onClick={() => setShowGallery(true)} className="mt-3 px-5 py-2 text-sm font-semibold text-white rounded-lg" style={{ backgroundColor: accent }}>
-              {lang === 'en' ? 'Browse Templates' : 'Shfletoni Shablonet'}
-            </button>
-          </div>
-        )}
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <h3 className="font-bold text-gray-900 mb-4">{lang === 'en' ? 'Dimensions & Quantity' : 'Dimensionet & Sasia'}</h3>
@@ -550,15 +547,18 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
             {prices.materials.map((m) => {
               const isExpanded = expandedMaterial === m.id;
               const isSelected = material === m.id;
-              const subs = MATERIAL_SUBCATEGORIES[m.id] || [];
+              const colors = MATERIAL_COLORS[m.id] || [];
+              const hasColors = colors.length > 0;
               return (
                 <div key={m.id} className="rounded-xl border-2 overflow-hidden transition-all" style={isSelected ? { borderColor: accent } : { borderColor: '#e5e7eb' }}>
                   <button
                     onClick={() => {
                       setMaterial(m.id);
                       setExpandedMaterial(isExpanded ? '' : m.id);
-                      if (subs.length > 0 && !subs.some(s => s.id === materialSub)) {
-                        setMaterialSub(subs[0].id);
+                      if (hasColors && !colors.some(c => c.id === materialColor)) {
+                        setMaterialColor(colors[0].id);
+                        setMaterialBrand(colors[0].brands[0]);
+                        setExpandedColor(colors[0].id);
                       }
                     }}
                     className={`w-full flex items-center justify-between p-4 transition-all ${
@@ -568,35 +568,69 @@ const Calculator: React.FC<CalculatorProps> = ({ onAddToQuote }) => {
                   >
                     <div className="flex items-center gap-3">
                       <p className="font-semibold text-sm">{lang === 'en' ? m.name : m.nameAl}</p>
-                      {subs.length > 0 && (
+                      {hasColors && (
                         <span className={`text-xs ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
-                          ({subs.length} {lang === 'en' ? 'options' : 'opsione'})
+                          ({colors.length} {lang === 'en' ? 'colors' : 'ngjyra'})
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>€{m.pricePerSqm}/m²</span>
-                      {subs.length > 0 && (
+                      {hasColors && (
                         <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''} ${isSelected ? 'text-white/80' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       )}
                     </div>
                   </button>
-                  {isExpanded && subs.length > 0 && isSelected && (
-                    <div className="p-3 bg-gray-50 border-t border-gray-200 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {subs.map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => setMaterialSub(sub.id)}
-                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                            materialSub === sub.id ? 'text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400'
-                          }`}
-                          style={materialSub === sub.id ? { backgroundColor: accent } : {}}
-                        >
-                          {lang === 'en' ? sub.name : sub.nameAl}
-                        </button>
-                      ))}
+                  {isExpanded && hasColors && isSelected && (
+                    <div className="border-t border-gray-200">
+                      <div className="p-3 bg-gray-50 space-y-2">
+                        <p className="text-xs font-semibold text-gray-500 uppercase">{lang === 'en' ? 'Color' : 'Ngjyra'}</p>
+                        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+                          {colors.map((color) => (
+                            <button
+                              key={color.id}
+                              onClick={() => {
+                                setMaterialColor(color.id);
+                                setExpandedColor(expandedColor === color.id ? '' : color.id);
+                                if (!color.brands.includes(materialBrand)) {
+                                  setMaterialBrand(color.brands[0]);
+                                }
+                              }}
+                              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                materialColor === color.id ? 'text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400'
+                              }`}
+                              style={materialColor === color.id ? { backgroundColor: accent } : {}}
+                            >
+                              {lang === 'en' ? color.name : color.nameAl}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {(() => {
+                        const activeColor = colors.find(c => c.id === materialColor);
+                        if (!activeColor || expandedColor !== materialColor) return null;
+                        return (
+                          <div className="p-3 bg-white border-t border-gray-200 space-y-2">
+                            <p className="text-xs font-semibold text-gray-500 uppercase">{lang === 'en' ? 'Brand' : 'Firma'}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {activeColor.brands.map((brand) => (
+                                <button
+                                  key={brand}
+                                  onClick={() => setMaterialBrand(brand)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                    materialBrand === brand ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
+                                  style={materialBrand === brand ? { backgroundColor: accent } : {}}
+                                >
+                                  {brand}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

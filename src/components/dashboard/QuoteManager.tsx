@@ -3,12 +3,22 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getQuotes, createQuote, updateQuote, deleteQuote as dbDeleteQuote, getNextQuoteNumber, getCustomers } from '../../lib/database';
 import type { CalcItem } from './Calculator';
+import { TEMPLATE_SHEETS } from './Calculator';
 
 interface QuoteItem {
   description: string;
   quantity: number;
   unitPrice: number;
   total: number;
+  templateInfo?: {
+    productType: string;
+    templateId: string;
+    sheetSrc: string;
+    cols: number;
+    rows: number;
+    row: number;
+    col: number;
+  };
 }
 
 interface Quote {
@@ -48,11 +58,32 @@ function calcItemsToQuoteItems(items: CalcItem[]): QuoteItem[] {
   items.forEach(item => {
     const typeLabel = item.productType === 'window' ? 'Window' : item.productType === 'door' ? 'Door' : 'Sliding Door';
     const productCost = item.materialCost + item.glassCost;
+
+    let templateInfo: QuoteItem['templateInfo'] = undefined;
+    if (item.templateId && item.templateId !== 'custom') {
+      const sheet = TEMPLATE_SHEETS[item.productType];
+      if (sheet) {
+        const tmpl = sheet.templates.find(t => t.id === item.templateId);
+        if (tmpl) {
+          templateInfo = {
+            productType: item.productType,
+            templateId: item.templateId,
+            sheetSrc: sheet.src,
+            cols: sheet.cols,
+            rows: sheet.rows,
+            row: tmpl.row,
+            col: tmpl.col,
+          };
+        }
+      }
+    }
+
     result.push({
       description: `${typeLabel} ${item.width}x${item.height}m — ${item.materialName}, ${item.glassName}`,
       quantity: item.quantity,
       unitPrice: Math.round((productCost / item.quantity) * 100) / 100,
       total: Math.round(productCost * 100) / 100,
+      templateInfo,
     });
     if (item.serviceDetails && item.serviceDetails.length > 0) {
       item.serviceDetails.forEach(svc => {
@@ -461,7 +492,29 @@ const QuoteManager: React.FC<QuoteManagerProps> = ({ type = 'quote', initialCalc
 
               <table className="w-full mb-6">
                 <thead><tr style={{ backgroundColor: accent }}><th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase">#</th><th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase">{lang === 'en' ? 'Description' : 'Përshkrimi'}</th><th className="px-4 py-3 text-right text-xs font-semibold text-white uppercase">{lang === 'en' ? 'Qty' : 'Sasia'}</th><th className="px-4 py-3 text-right text-xs font-semibold text-white uppercase">{lang === 'en' ? 'Price' : 'Çmimi'}</th><th className="px-4 py-3 text-right text-xs font-semibold text-white uppercase">Total</th></tr></thead>
-                <tbody>{(previewQuote.items || []).map((item: QuoteItem, idx: number) => (<tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}><td className="px-4 py-3 text-sm">{idx + 1}</td><td className="px-4 py-3 text-sm font-medium">{item.description}</td><td className="px-4 py-3 text-sm text-right font-mono">{item.quantity}</td><td className="px-4 py-3 text-sm text-right font-mono">€{item.unitPrice?.toFixed(2)}</td><td className="px-4 py-3 text-sm text-right font-mono font-semibold">€{item.total?.toFixed(2)}</td></tr>))}</tbody>
+                <tbody>{(previewQuote.items || []).map((item: QuoteItem, idx: number) => (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-4 py-3 text-sm">{idx + 1}</td>
+                    <td className="px-4 py-3 text-sm font-medium">
+                      <div className="flex items-center gap-3">
+                        {item.templateInfo && (
+                          <div
+                            className="w-12 h-12 rounded border border-gray-200 bg-no-repeat flex-shrink-0"
+                            style={{
+                              backgroundImage: `url(${item.templateInfo.sheetSrc})`,
+                              backgroundSize: `${item.templateInfo.cols * 100}% ${item.templateInfo.rows * 100}%`,
+                              backgroundPosition: `${(item.templateInfo.col / (item.templateInfo.cols - 1)) * 100}% ${(item.templateInfo.row / (item.templateInfo.rows - 1)) * 100}%`,
+                            }}
+                          />
+                        )}
+                        <span>{item.description}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right font-mono">{item.quantity}</td>
+                    <td className="px-4 py-3 text-sm text-right font-mono">€{item.unitPrice?.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm text-right font-mono font-semibold">€{item.total?.toFixed(2)}</td>
+                  </tr>
+                ))}</tbody>
               </table>
               <div className="flex justify-end">
                 <div className="w-72">
