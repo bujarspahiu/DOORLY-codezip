@@ -17,6 +17,7 @@ A SaaS platform for window and door professionals to manage their business opera
 - In production (VPS): Express serves both static files from `dist/` and the API on one port
 - `data/` directory is in `.gitignore` — code updates never touch the database
 - Database auto-creates tables and seeds default users on first run
+- CORS enabled only in development mode
 
 ## Database Tables
 - `users` — All users (admin + business)
@@ -52,27 +53,44 @@ A SaaS platform for window and door professionals to manage their business opera
   - Sliding Doors: 15 templates (`/templates/sliding-doors.png`, 3x5 grid)
   - CSS `background-position` crops individual templates from master sheets
   - "Custom / No Template" option available
-- **Material Sub-Categories**: PVC (6 colors), Aluminum (5 finishes), Wood (4 types), Steel (3 types)
+- **Material Sub-Categories**: PVC (6 colors × 5 brands), Aluminum (5 finishes × 6 brands), Wood and Steel flat
   - Expandable sections appear beneath selected material
 - **Services & Accessories**: +/- buttons with quantity counters
   - Quantities factor into price calculation and quote line items
 - **CalcItem** includes `templateId` field for tracking selected template
 - Template selection is required before adding items to the list
 
-## Company Profile & Customers
-- Company Profile has: company info, bank account details, logo upload, branding colors
-- Customer has: same fields as company (name, email, phone, address, city, country, reg number, VAT, bank details) but only name is mandatory
-- When creating quotes/invoices, user can select existing customer to auto-fill all fields
-- Invoice/quote preview shows both company and customer details, including bank payment details and company logo
-- Calculator items (with services & accessories) transfer as itemized line items to quotes
+## Price Management
+- Per-category pricing: Materials, Glass, Services, Accessories
+- Each item has an `enabled` flag — toggled via eye icon to show/hide in the calculator without deleting
+- Visibility state persists in the price_configs JSON in the database
+
+## Quote & Invoice System
+- Quote line items include template thumbnail images (cropped from master sheets)
+- Calculator items transfer as itemized line items with template metadata
 - Quotes can be converted to invoices via "Convert to Invoice" button
 - Print opens a clean print window with just the document content
+- VAT rate: 18% (hardcoded for Kosovo market)
+
+## Company Profile & Customers
+- Company Profile: company info, bank account details, logo upload, branding colors
+- Dashboard notification to complete profile disappears once name, phone, address are filled
+- Customer: same fields as company (only name is mandatory)
+- When creating quotes/invoices, user can select existing customer to auto-fill all fields
 
 ## Branding
 - Logo: `/public/doorly-logo.png` (full), `/public/doorly-logo-nobg.png` (transparent)
 - Used across: navbar, footer, dashboard sidebar, admin panel, admin login, favicon, OG image
 
+## VPS Deployment
+- **Build**: `npm install && npm run build`
+- **Start**: `npm start` (or `NODE_ENV=production node server.js`)
+- **PM2**: `pm2 start ecosystem.config.cjs`
+- **Nginx**: Copy `nginx.conf.example`, update `server_name`, enable SSL with certbot
+- **Data**: `data/doorly.db` is auto-created on first run; back it up regularly
+- **Env**: Copy `.env.example` to `.env` and configure PORT
+- **Node**: Requires Node.js >= 18
+
 ## Running
 - Development: `npm run dev` — starts Express API + Vite dev server
 - Production: `npm run build && npm start` — builds frontend, then starts Express serving everything
-- VAT rate: 18% (hardcoded)
