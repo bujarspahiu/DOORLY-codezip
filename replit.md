@@ -45,6 +45,20 @@ A SaaS platform for window and door professionals to manage their business opera
 - `src/lib/userStore.ts` - User API client (fetch-based)
 - `src/lib/database.ts` - Business data API client (fetch-based)
 
+## Calculator & Templates
+- **Template Gallery**: Modal overlay shows all templates from master sheet images
+  - Windows: 48 templates (`/templates/windows.png`, 8x6 grid)
+  - Doors: 38 templates (`/templates/doors.png`, 8x5 grid)
+  - Sliding Doors: 15 templates (`/templates/sliding-doors.png`, 3x5 grid)
+  - CSS `background-position` crops individual templates from master sheets
+  - "Custom / No Template" option available
+- **Material Sub-Categories**: PVC (6 colors), Aluminum (5 finishes), Wood (4 types), Steel (3 types)
+  - Expandable sections appear beneath selected material
+- **Services & Accessories**: +/- buttons with quantity counters
+  - Quantities factor into price calculation and quote line items
+- **CalcItem** includes `templateId` field for tracking selected template
+- Template selection is required before adding items to the list
+
 ## Company Profile & Customers
 - Company Profile has: company info, bank account details, logo upload, branding colors
 - Customer has: same fields as company (name, email, phone, address, city, country, reg number, VAT, bank details) but only name is mandatory
