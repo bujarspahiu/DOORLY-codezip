@@ -11,11 +11,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const isProduction = process.env.NODE_ENV === 'production';
-
-if (!isProduction) {
-  app.use(cors());
-}
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 const dataDir = path.join(__dirname, 'data');
@@ -331,6 +327,11 @@ function formatUser(row) {
     createdAt: row.created_at,
   };
 }
+
+app.use((err, _req, res, _next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Doorly API server running on port ${PORT}`);
